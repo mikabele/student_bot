@@ -12,7 +12,7 @@
 
 #configs
 
-src/main/resoursec/application.conf
+src/main/resources/application.conf
 
 # bsp
 .bsp
