@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="info">
+    <Properties>
+        <property name="pattern">%d{yyyy-MM-dd HH:mm:ss} %-5level [%logger{5}.%M]: %msg%n</property>
+    </Properties>
+    <ThresholdFilter level="trace"/>
+    <Appenders>
+        <File name="MainFile" fileName="log_files/server.log">
+            <PatternLayout pattern="${pattern}"/>
+        </File>
+        <File name="DatabaseLayerFile" fileName="log_files/database.log">
+            <PatternLayout pattern="${pattern}"/>
+        </File>
+        <File name="NotificatorLayerFile" fileName="log_files/email.log">
+            <PatternLayout pattern="${pattern}"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="debug">
+            <Appender-ref ref="MainFile" level="trace"/>
+        </Root>
+        <Logger name="database_layer" level="debug" additivity="false">
+            <Appender-ref ref="DatabaseLayerFile" level="trace"/>
+        </Logger>
+        <Logger name="notificator_layer" level="debug" additivity="false">
+            <Appender-ref ref="NotificatorLayerFile" level="trace"/>
+        </Logger>
+    </Loggers>
+</Configuration>
