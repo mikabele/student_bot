@@ -13,11 +13,12 @@ class DoobieAuthRepositoryImpl[F[_]: Async](tx: Transactor[F]) extends AuthRepos
   private val getGroupsQuery    = Fragment.const("SELECT DISTINCT \"group\" FROM students")
   private val getCoursesQuery   = sql"SELECT DISTINCT course FROM students"
   private val registerUserQuery = sql"UPDATE students SET "
+  private val checkUserQuery    = sql"SELECT EXISTS(SELECT * FROM students "
 
   override def getStudents(course: Int, group: Int): F[List[UserReadDomain]] = {
     (getStudentsQuery ++ fr" WHERE course = $course AND " ++ Fragment.const(
       "\"group\""
-    ) ++ fr" = $group AND tgUsername IS NULL")
+    ) ++ fr" = $group AND tgUsername IS NULL ORDER BY id")
       .query[UserReadDomain]
       .to[List]
       .transact(tx)
@@ -33,6 +34,11 @@ class DoobieAuthRepositoryImpl[F[_]: Async](tx: Transactor[F]) extends AuthRepos
   }
 
   override def registerUser(userId: Int, username: String): F[Int] = {
-    (registerUserQuery ++ fr" tgUsername = $username WHERE id = $userId").update.run.transact(tx)
+    (registerUserQuery ++ fr" tgUsername = $username WHERE id = $userId AND tgUsername IS NULL").update.run.transact(tx)
   }
+
+  override def checkUserByNickname(usr: String): F[Boolean] = {
+    (checkUserQuery ++ fr" WHERE tgUsername = $usr)").query[Boolean].unique.transact(tx)
+  }
+
 }

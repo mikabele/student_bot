@@ -8,14 +8,8 @@ import cats.syntax.all._
 import scenarios.impl.AuthScenarioImpl
 import service.AuthService
 
-trait AuthScenario[F[_]] {
+trait AuthScenario[F[_]] extends CallbackAnswerHandler[F] {
   def startBot: Scenario[F, Unit]
-
-  def getStudentsAnswer: PartialFunction[CallbackQuery, F[Unit]]
-
-  def getGroupsAnswer: PartialFunction[CallbackQuery, F[Unit]]
-
-  def answers: Seq[PartialFunction[CallbackQuery, F[Unit]]]
 }
 
 object AuthScenario {

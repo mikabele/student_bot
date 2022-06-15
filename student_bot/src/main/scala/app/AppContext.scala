@@ -25,7 +25,7 @@ object AppContext {
       authScenario   = AuthScenario.of(authService)
       authAnswers    = authScenario.answers
 
-      answers = AnswerCallbacksUtil.answer(authAnswers)
+      answers = AnswerCallbacksUtil.answerCallback(authAnswers)
     } yield Bot
       .polling[F]
       .follow(authScenario.startBot)
