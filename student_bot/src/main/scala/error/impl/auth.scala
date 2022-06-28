@@ -1,6 +1,8 @@
-package error
+package error.impl
 
-package object auth {
+import error.BotError
+
+object auth {
   final case object UserNotFound extends BotError {
     override def getMessage: String = "Oops, мы не смогли найти твоего пользователя, попробуй еще раз."
   }
@@ -15,5 +17,9 @@ package object auth {
 
   final case object ForbiddenAuthUser extends BotError {
     override def getMessage: String = "Этот студент уже авторизовался, выбери другое имя."
+  }
+
+  final case object NonAuthorizedUser extends BotError {
+    override def getMessage: String = "Пользователь не авторизован."
   }
 }

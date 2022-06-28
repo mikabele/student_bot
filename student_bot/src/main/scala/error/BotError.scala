@@ -1,5 +1,5 @@
 package error
 
-trait BotError {
+trait BotError extends Throwable {
   def getMessage: String
 }
