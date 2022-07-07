@@ -26,6 +26,11 @@ object callback {
       place:            Option[Int]              = None
     ) extends Flow(2)
 
+    final case class GetQueueFlow(
+      queueSeriesId: Option[Int]  = None,
+      date:          Option[Date] = None
+    ) extends Flow(3)
+
     val values: Map[Int, Object] = Map(1 -> AuthFlow, 2 -> AddToQueueFlow)
   }
 

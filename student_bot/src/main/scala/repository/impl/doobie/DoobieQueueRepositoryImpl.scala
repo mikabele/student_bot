@@ -9,6 +9,7 @@ import doobie.Fragment
 import doobie.implicits._
 import doobie.util.transactor.Transactor
 import repository.QueueRepository
+import repository.impl.doobie.logger.logger.log4jLogger
 import util.MappingUtil.DbDomainMappingUtil._
 
 import java.util.Date
@@ -42,17 +43,10 @@ class DoobieQueueRepositoryImpl[F[_]: Sync](tx: Transactor[F]) extends QueueRepo
     (createQueueQuery ++ fr"($qsId,$date)").update.withUniqueGeneratedKeys[Int]("id").transact(tx)
   }
 
-  //TODO dummy method, remove it and replace with getId
-  override def getQueue(qsId: Int, date: Date): F[Option[Queue]] = {
-    val res = for {
-      queue <- OptionT(
-        (getQueueQuery ++ fr"WHERE queue_series_id = $qsId AND date = $date")
-          .query[QueueDbReadDomain]
-          .option
-          .transact(tx)
-      )
-    } yield Queue(queue.id, queue.queueSeriesId, queue.date, List.empty[QueueRecord])
-
-    res.value
+  override def getQueue(qsId: Int, date: Date): F[Option[QueueDbReadDomain]] = {
+    (getQueueQuery ++ fr"WHERE queue_series_id = $qsId AND date = $date")
+      .query[QueueDbReadDomain]
+      .option
+      .transact(tx)
   }
 }

@@ -22,7 +22,6 @@ object Main extends IOApp.Simple {
       .flatMap(b => b)
       .compile
       .drain
-      .handleErrorWith(error => IO.pure(println(error.getMessage)))
   }
 
   def botResource[F[_]: Async: MkRedis: MonadError[*[_], Throwable]]: Resource[F, Stream[F, Update]] = {

@@ -5,11 +5,11 @@ import canoe.api.{Bot, TelegramClient}
 import canoe.models.Update
 import cats.MonadError
 import cats.effect.{Async, Resource}
-import cats.syntax.all._
 import dev.profunktor.redis4cats.Redis
 import dev.profunktor.redis4cats.effect.MkRedis
 import domain.app._
 import fs2.Stream
+import logger.LogHandler
 import repository.{QueueRepository, StudentRepository}
 import scenarios.{AuthScenarios, QueueScenarios}
 import service.{AuthService, QueueService}
@@ -19,6 +19,7 @@ object AppContext {
   def setUp[F[_]: Async: TelegramClient: MkRedis: MonadError[*[_], Throwable]](
     conf: AppConf
   ): Resource[F, Stream[F, Update]] = {
+    implicit val logHandler: LogHandler[F] = logger.impl.log4jLogHandler("root")
     for {
       tx <- transactor[F](conf.db)
 
@@ -33,14 +34,20 @@ object AppContext {
       authAnswers       = authScenario.answers
 
       queueRepository = QueueRepository.of(tx)
-      queueService    = QueueService.of(studentRepository, queueRepository)
+      queueService   <- Resource.eval(QueueService.of(studentRepository, queueRepository))
       queueScenario  <- Resource.eval(QueueScenarios.of(redis, queueService, authService))
       queueAnswers    = queueScenario.answers
 
       answers = MarshallingUtil.answerCallback(authAnswers ++ queueAnswers)
     } yield Bot
-      .polling[F]
-      .follow(authScenario.startBotScenario, queueScenario.addToQueueScenario)
+      .polling[F] //.updates.through(pipes.inlineQueries)
+      .follow(
+        authScenario.startBotScenario,
+        queueScenario.addToQueueScenario,
+        queueScenario.addFriendToQueue,
+        queueScenario.getQueueSeries,
+        queueScenario.getQueue
+      )
       .through(answers)
   }
 }

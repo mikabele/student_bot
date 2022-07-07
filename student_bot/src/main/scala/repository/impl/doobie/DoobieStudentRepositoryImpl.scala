@@ -1,11 +1,15 @@
 package repository.impl.doobie
 
+import cats.data.NonEmptyList
 import cats.effect.Async
+import cats.syntax.all._
 import domain.user.StudentReadDomain
 import doobie.Fragment
 import doobie.implicits._
+import doobie.util.fragments.in
 import doobie.util.transactor.Transactor
 import repository.StudentRepository
+import repository.impl.doobie.logger.logger.log4jLogger
 
 class DoobieStudentRepositoryImpl[F[_]: Async](tx: Transactor[F]) extends StudentRepository[F] {
 
@@ -47,5 +51,10 @@ class DoobieStudentRepositoryImpl[F[_]: Async](tx: Transactor[F]) extends Studen
 
   override def getGroupSize(student: StudentReadDomain): F[Int] = {
     (getGroupSizeQuery ++ Fragment.const(" WHERE \"group\" = ") ++ fr"${student.group}").query[Int].unique.transact(tx)
+  }
+
+  override def getStudentsByIds(studentIds: NonEmptyList[Int]): F[List[StudentReadDomain]] = {
+    (getStudentsQuery ++ fr" WHERE " ++ in(fr"id", studentIds)).query[StudentReadDomain].to[List].transact(tx)
+
   }
 }

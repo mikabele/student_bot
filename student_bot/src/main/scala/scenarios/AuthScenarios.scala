@@ -3,6 +3,7 @@ package scenarios
 import canoe.api.{Scenario, TelegramClient}
 import cats.MonadError
 import dev.profunktor.redis4cats.RedisCommands
+import logger.LogHandler
 import scenarios.impl.AuthScenariosImpl
 import service.AuthService
 
@@ -13,7 +14,7 @@ trait AuthScenarios[F[_]] extends CallbackAnswerHandler[F] {
 }
 
 object AuthScenarios {
-  def of[F[_]: TelegramClient: MonadError[*[_], Throwable]](
+  def of[F[_]: TelegramClient: MonadError[*[_], Throwable]: LogHandler](
     redisCommands: RedisCommands[F, String, String],
     authService:   AuthService[F]
   ): AuthScenarios[F] = {

@@ -14,17 +14,19 @@ import domain.user.StudentReadDomain
 import error.impl.auth._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import logger.LogHandler
 import scenarios.AuthScenarios
 import service.AuthService
 import util.DecodingUtil.parseRedisData
-import util.MarshallingUtil.{handleErrorInScenario, replyMsg}
+import util.MarshallingUtil._
 import util.TelegramElementBuilder._
 
 class AuthScenariosImpl[F[_]: TelegramClient](
   redisCommands: RedisCommands[F, String, String],
   authService:   AuthService[F]
 )(
-  implicit me: MonadError[F, Throwable]
+  implicit me: MonadError[F, Throwable],
+  logHandler:  LogHandler[F]
 ) extends AuthScenarios[F] {
 
   private def checkForNonAuthorization(user: Option[User]): F[Unit] = {
@@ -68,28 +70,28 @@ class AuthScenariosImpl[F[_]: TelegramClient](
   }
 
   override def startBotScenario: Scenario[F, Unit] = {
-    val res = for {
-      msg <- Scenario.expect(command("start"))
-      chat = msg.chat
-      // TODO after this line create function with main logic
-      _       <- answerForNonAuthorization(msg.from, chat)
-      courses <- Scenario.eval(authService.getCourses)
-      flow     = AuthFlow()
-      key      = msg.from.get.username.get + flow.value
-      kb = buildInlineKeyboard[Int](
-        courses,
-        course => course.toString,
-        course => CallbackAnswer(flow.value, 1, course.toString)
-      )
-      rm = ReplyMessage(
-        "Привет, студент. Я Бот, могу помочь тебе с некоторыми штучками. Но сначала мне надо знать, кто ты. Выбери, пожалуйста, номер курса.",
-        keyboard = kb
-      )
-      _ <- Scenario.eval(redisCommands.set(key, flow.asJson.toString()))
-      _ <- Scenario.eval(replyMsg(chat, rm))
-    } yield () // handleErrorInScenario(res, chat, showMainMenu = false)
-    handleErrorInScenario(res)
-    //res.handleErrorWith(_ => Scenario.done: Scenario[F, Unit])
+    scenario(command("start")) { msg =>
+      {
+        val chat = msg.chat
+        for {
+          _       <- answerForNonAuthorization(msg.from, chat)
+          courses <- Scenario.eval(authService.getCourses)
+          flow     = AuthFlow()
+          key      = msg.from.get.username.get + flow.value
+          kb = buildInlineKeyboard[Int](
+            courses,
+            course => course.toString,
+            course => CallbackAnswer(flow.value, 1, course.toString)
+          )
+          rm = ReplyMessage(
+            "Привет, студент. Я Бот, могу помочь тебе с некоторыми штучками. Но сначала мне надо знать, кто ты. Выбери, пожалуйста, номер курса.",
+            keyboard = kb
+          )
+          _ <- Scenario.eval(redisCommands.set(key, flow.asJson.toString()))
+          _ <- Scenario.eval(replyMsg(chat, rm))
+        } yield ()
+      }
+    }
   }
 
   private def getStudentsAnswer(query: CallbackQueryExt): F[Unit] = {
@@ -137,17 +139,14 @@ class AuthScenariosImpl[F[_]: TelegramClient](
   }
 
   private def registerUser(query: CallbackQueryExt): F[Unit] = {
-    val key = query.query.from.username.get + query.answer.flowId
+    val studentId = query.answer.value.toInt
     for {
-      value    <- redisCommands.get(key)
-      flow     <- me.fromEither(parseRedisData[AuthFlow](value))
-      studentId = query.answer.value.toInt
-      _        <- checkForNonAuthorization(query.query.from.some)
-      res      <- authService.registerUser(studentId, query.query.from)
-      _        <- me.fromEither(res)
-      rm        = ReplyMessage("Ура, теперь я знаю как тебя зовут и я полностью готов к работе")
-      _        <- query.query.message.traverse(_.delete)
-      _        <- query.query.message.traverse(msg => replyMsg(msg.chat, rm))
+      _   <- checkForNonAuthorization(query.query.from.some)
+      res <- authService.registerUser(studentId, query.query.from)
+      _   <- me.fromEither(res)
+      rm   = ReplyMessage("Ура, теперь я знаю как тебя зовут и я полностью готов к работе")
+      _   <- query.query.message.traverse(_.delete)
+      _   <- query.query.message.traverse(msg => replyMsg(msg.chat, rm))
     } yield ()
   }
 

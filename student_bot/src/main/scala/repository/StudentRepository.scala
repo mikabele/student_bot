@@ -1,11 +1,14 @@
 package repository
 
+import cats.data.NonEmptyList
 import cats.effect.kernel.Async
 import domain.user.StudentReadDomain
 import doobie.util.transactor.Transactor
 import repository.impl.doobie.DoobieStudentRepositoryImpl
 
 trait StudentRepository[F[_]] {
+  def getStudentsByIds(studentIds: NonEmptyList[Int]): F[List[StudentReadDomain]]
+
   def getStudentByNickname(nickname: String): F[Option[StudentReadDomain]]
 
   def getStudentById(studentId: Int): F[Option[StudentReadDomain]]

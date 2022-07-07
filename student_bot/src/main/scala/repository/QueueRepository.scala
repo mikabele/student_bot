@@ -2,7 +2,7 @@ package repository
 
 import cats.effect.kernel.Async
 import domain.queue
-import domain.queue.{Queue, QueueSeries}
+import domain.queue.{QueueDbReadDomain, QueueSeries}
 import domain.user.StudentReadDomain
 import doobie.util.transactor.Transactor
 import repository.impl.doobie.DoobieQueueRepositoryImpl
@@ -10,9 +10,10 @@ import repository.impl.doobie.DoobieQueueRepositoryImpl
 import java.util.Date
 
 trait QueueRepository[F[_]] {
+
   def createQueue(qsId: Int, date: Date): F[Int]
 
-  def getQueue(qsId: Int, date: Date): F[Option[Queue]]
+  def getQueue(qsId: Int, date: Date): F[Option[QueueDbReadDomain]]
 
   def getQueueSeries(student: StudentReadDomain): F[List[QueueSeries]]
 

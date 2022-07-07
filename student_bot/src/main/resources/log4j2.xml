@@ -11,9 +11,9 @@
         <File name="DatabaseLayerFile" fileName="log_files/database.log">
             <PatternLayout pattern="${pattern}"/>
         </File>
-        <File name="NotificatorLayerFile" fileName="log_files/email.log">
-            <PatternLayout pattern="${pattern}"/>
-        </File>
+<!--        <File name="NotificatorLayerFile" fileName="log_files/email.log">-->
+<!--            <PatternLayout pattern="${pattern}"/>-->
+<!--        </File>-->
     </Appenders>
     <Loggers>
         <Root level="debug">
@@ -22,8 +22,8 @@
         <Logger name="database_layer" level="debug" additivity="false">
             <Appender-ref ref="DatabaseLayerFile" level="trace"/>
         </Logger>
-        <Logger name="notificator_layer" level="debug" additivity="false">
-            <Appender-ref ref="NotificatorLayerFile" level="trace"/>
-        </Logger>
+<!--        <Logger name="notificator_layer" level="debug" additivity="false">-->
+<!--            <Appender-ref ref="NotificatorLayerFile" level="trace"/>-->
+<!--        </Logger>-->
     </Loggers>
 </Configuration>
