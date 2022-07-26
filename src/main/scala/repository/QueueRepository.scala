@@ -7,13 +7,16 @@ import domain.user.StudentReadDomain
 import doobie.util.transactor.Transactor
 import repository.impl.doobie.DoobieQueueRepositoryImpl
 
-import java.util.Date
+import java.time.LocalDate
 
 trait QueueRepository[F[_]] {
+  def removeFromQueue(queueId: Int, studentId: Int): F[Int]
 
-  def createQueue(qsId: Int, date: Date): F[Int]
+  def takeAnotherPlace(studentId: Int, queueId: Int, place: Int): F[Int]
 
-  def getQueue(qsId: Int, date: Date): F[Option[QueueDbReadDomain]]
+  def createQueue(qsId: Int, date: LocalDate): F[Int]
+
+  def getQueue(qsId: Int, date: LocalDate): F[Option[QueueDbReadDomain]]
 
   def getQueueSeries(student: StudentReadDomain): F[List[QueueSeries]]
 

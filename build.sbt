@@ -2,6 +2,7 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.8"
 
+//TODO move to another project and deploy independently
 lazy val bot = Project(id = "botAPI", base = file("botAPI_ext"))
 
 lazy val root = Project(id = "root", base = file("."))

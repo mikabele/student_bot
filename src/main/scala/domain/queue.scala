@@ -20,16 +20,20 @@ object queue {
   )
 
   final case class QueueSeries(
-    id:     Int,
-    name:   String,
-    group:  Int,
-    queues: List[Queue]
+    id:         Int,
+    name:       String,
+    university: String,
+    course:     Int,
+    group:      Int,
+    queues:     List[Queue]
   )
 
   final case class QueueSeriesDbReadDomain(
-    id:    Int,
-    name:  String,
-    group: Int
+    id:         Int,
+    name:       String,
+    university: String,
+    course:     Int,
+    group:      Int,
   )
 
   final case class QueueRecord(

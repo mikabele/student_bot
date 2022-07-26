@@ -7,6 +7,10 @@ import doobie.util.transactor.Transactor
 import repository.impl.doobie.DoobieStudentRepositoryImpl
 
 trait StudentRepository[F[_]] {
+  def getUniversities(): F[List[String]]
+
+  def removeUser(userId: Int): F[Int]
+
   def getStudentByTgID(tgID: String): F[Option[StudentReadDomain]]
 
   def getStudentsByIds(studentIds: NonEmptyList[Int]): F[List[StudentReadDomain]]
@@ -15,11 +19,11 @@ trait StudentRepository[F[_]] {
 
   def registerUser(userId: Int, tgID: String): F[Int]
 
-  def getStudents(course: Int, group: Int): F[List[StudentReadDomain]]
+  def getStudents(university: String, course: Int, group: Int): F[List[StudentReadDomain]]
 
-  def getGroups(course: Int): F[List[Int]]
+  def getGroups(university: String, course: Int): F[List[Int]]
 
-  def getCourses: F[List[Int]]
+  def getCourses(university: String): F[List[Int]]
 
   def getGroupSize(student: StudentReadDomain): F[Int]
 }

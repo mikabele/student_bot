@@ -2,20 +2,24 @@ DROP TABLE IF EXISTS student CASCADE;
 CREATE TABLE student
 (
     id         SERIAL,
-    first_name VARCHAR(32) NOT NULL,
-    last_name  VARCHAR(30) NOT NULL,
-    "group"    INT         NOT NULL,
-    course     INT         NOT NULL,
+    first_name VARCHAR(32)  NOT NULL,
+    last_name  VARCHAR(30)  NOT NULL,
+    university VARCHAR(100) NOT NULL,
+    "group"    INT          NOT NULL,
+    course     INT          NOT NULL,
     tg_user_id VARCHAR(100) DEFAULT NULL,
     PRIMARY KEY (id)
 );
 
+
 DROP TABLE IF EXISTS queue_series CASCADE;
 CREATE TABLE queue_series
 (
-    id      SERIAL,
-    "name"  VARCHAR(50) NOT NULL,
-    "group" INT         NOT NULL,
+    id         SERIAL,
+    "name"     VARCHAR(50)  NOT NULL,
+    university VARCHAR(100) NOT NULL,
+    "group"    INT          NOT NULL,
+    course     INT          NOT NULL,
     PRIMARY KEY (id)
 );
 

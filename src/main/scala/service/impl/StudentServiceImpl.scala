@@ -3,7 +3,6 @@ package service.impl
 import canoe.models.User
 import cats.Monad
 import cats.data.EitherT
-import cats.syntax.all._
 import domain.user._
 import error.BotError
 import error.impl.auth._
@@ -21,18 +20,12 @@ class StudentServiceImpl[F[_]: Monad](authRepository: StudentRepository[F]) exte
     res.value
   }
 
-  override def getNonAuthorizedStudents(course: Int, group: Int): F[List[StudentReadDomain]] = {
-    for {
-      students <- authRepository.getStudents(course, group)
-    } yield students.filter(_.tgUserId.isEmpty)
+  override def getGroups(university: String, course: Int): F[List[Int]] = {
+    authRepository.getGroups(university, course)
   }
 
-  override def getGroups(course: Int): F[List[Int]] = {
-    authRepository.getGroups(course)
-  }
-
-  override def getCourses: F[List[Int]] = {
-    authRepository.getCourses
+  override def getCourses(university: String): F[List[Int]] = {
+    authRepository.getCourses(university)
   }
 
   override def checkAuthUser(user: Option[User]): F[Either[BotError, StudentReadDomain]] = {
@@ -43,10 +36,14 @@ class StudentServiceImpl[F[_]: Monad](authRepository: StudentRepository[F]) exte
     res.value
   }
 
-  override def getAuthorizedStudents(course: Int, group: Int): F[List[StudentReadDomain]] = {
-    for {
-      students <- authRepository.getStudents(course, group)
-      _         = println(students)
-    } yield students.filter(_.tgUserId.nonEmpty)
+  override def getStudents(university: String, course: Int, group: Int): F[List[StudentReadDomain]] =
+    authRepository.getStudents(university, course, group)
+
+  override def signOut(student: StudentReadDomain): F[Int] = {
+    authRepository.removeUser(student.userId)
+  }
+
+  override def getUniversities: F[List[String]] = {
+    authRepository.getUniversities()
   }
 }

@@ -140,4 +140,13 @@ object Scenario extends ScenarioInstances {
   def raiseError[F[_]](e: Throwable): Scenario[F, Nothing] =
     new Scenario[F, Nothing](Episode.RaiseError(e))
 
+  def fromEitherF[F[_], A, B <: Throwable](f: F[Either[B, A]]): Scenario[F, A] = {
+    for {
+      temp <- Scenario.eval(f)
+      res <- temp.fold(
+        error => Scenario.raiseError(error): Scenario[F, A],
+        value => Scenario.pure(value): Scenario[F, A]
+      )
+    } yield res
+  }
 }

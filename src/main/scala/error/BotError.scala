@@ -1,5 +1,7 @@
 package error
 
+import java.util.ResourceBundle
+
 trait BotError extends Throwable {
-  def getMessage: String
+  def resourceString(bundle: ResourceBundle): String
 }

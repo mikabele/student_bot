@@ -1,84 +1,100 @@
 package util
 
+import canoe.api.models.Keyboard
 import canoe.api.{callbackQueryApi, chatApi, TelegramClient}
-import canoe.models.messages.TelegramMessage
-import canoe.models.{CallbackButtonSelected, Chat, Update}
+import canoe.models.CallbackQuery
+import canoe.models.messages.{TelegramMessage, TextMessage}
+import canoe.models.outgoing.MessageContent
 import canoe.syntax._
+import cats.Monad
 import cats.syntax.all._
-import cats.{Applicative, Monad, MonadError}
-import constants.mainMenuKeyboard
+import constants._
 import core._
-import domain.callback.{CallbackAnswer, CallbackQueryExt}
 import domain.message.ReplyMessage
-import fs2.Pipe
-import io.circe.generic.auto._
+import error.BotError
 import logger.LogHandler
-import syntax.syntax.Expect
-import util.DecodingUtil.decodeCallbackData
+import syntax.syntax.{callback, Expect}
+import util.bundle.ResourceBundleUtil
+
+import java.util.ResourceBundle
 
 object MarshallingUtil {
 
   //TODO check why if i send 2 messages with little interval server crushed
   //TODO change messagable signature
+
+  def getBundleInScenario(msg: TelegramMessage, resourceBundleUtil: ResourceBundleUtil): ResourceBundle = msg match {
+    case m: TextMessage => resourceBundleUtil.getBundle(m.from.get.languageCode.getOrElse(DEFAULT_LANG))
+    case _ => resourceBundleUtil.getBundle(DEFAULT_LANG)
+  }
+
   def scenario[F[_]: TelegramClient: Monad, A <: TelegramMessage](
-    expect: Expect[A]
+    expect:             Expect[A],
+    resourceBundleUtil: ResourceBundleUtil
   )(
     func: A => Scenario[F, Unit]
   )(
     implicit logHandler: LogHandler[F]
   ): Scenario[F, Unit] = {
     val res = for {
-      msg <- Scenario.expect(expect)
-//      res <- Scenario.eval(UnpinChatMessage(msg.chat.id).call)
-//      _   <- Scenario.eval(logHandler.info(s"Message unpinned - ${res}"))
-//      res <- Scenario.eval(PinChatMessage(msg.chat.id, msg.messageId, true.some).call)
-//      _   <- Scenario.eval(logHandler.info(s"Message pinned - ${res}"))
-      _ <- func(msg).handleErrorWith(e => {
-        for {
-          _ <- Scenario.eval(logHandler.error(e.getMessage))
-          //_ <- Scenario.eval(msg.delete)
-          _ <- Scenario.eval(msg.chat.send(e.getMessage, keyboard = mainMenuKeyboard))
-        } yield ()
-      })
+      msg   <- Scenario.expect(expect)
+      bundle = getBundleInScenario(msg, resourceBundleUtil)
+      _ <- func(msg)
+        .handleErrorWith {
+          case e: BotError => {
+            for {
+              _ <- Scenario.eval(logHandler.error(e.resourceString(bundle)))
+              _ <- Scenario.eval(msg.chat.send(e.resourceString(bundle), keyboard = mainMenuKeyboard(bundle)))
+            } yield ()
+          }
+          case ex: Throwable =>
+            for {
+              _ <- Scenario.eval(logHandler.error(ex.getMessage))
+              // _ <- Scenario.eval(msg.chat.send(ex.getMessage(), keyboard = mainMenuKeyboard(bundle)))
+            } yield ()
+        }
     } yield ()
 
-    res.handleErrorWith(e => Scenario.eval(logHandler.error(e.getMessage)))
+    res.handleErrorWith(_ => Scenario.done)
   }
 
-  def replyMsg[F[_]: TelegramClient: Monad, M](chat: Chat, msg: ReplyMessage[M]): F[M] = {
+  def defaultMsgAnswer[F[_]: TelegramClient: Monad, M](msg: TelegramMessage)(content: ReplyMessage[M]): F[Option[M]] = {
+
     for {
-      res <- chat.send(msg.content, msg.replyToMessageId, msg.keyboard, msg.disableNotification)
-    } yield res
+      res <- msg.chat.send(content.content, content.replyToMessageId, content.keyboard, content.disableNotification)
+    } yield res.some
 
   }
 
-  private def defaultAnswer[F[_]: Monad: TelegramClient]: PartialFunction[CallbackQueryExt, F[Unit]] = { case _ =>
-    Applicative[F].unit
-  }
-
-  def answerCallback[F[_]: TelegramClient](
-    answers: Seq[PartialFunction[CallbackQueryExt, F[Unit]]]
+  def defaultCallbackAnswer[F[_]: Monad: TelegramClient, M](
+    query: CallbackQuery
   )(
-    implicit me: MonadError[F, Throwable],
-    logHandler:  LogHandler[F]
-  ): Pipe[F, Update, Update] = { u =>
-    u.evalTap {
-      case CallbackButtonSelected(_, query) =>
-        val handlers = answers
-          .reduce(_ orElse _)
-          .orElse(defaultAnswer)
-        val res = for {
-          answer <- me.fromEither(decodeCallbackData[CallbackAnswer](query))
-          ext     = CallbackQueryExt(query, answer)
-          _      <- handlers(ext)
-        } yield ()
-        res.handleErrorWith(e => {
-          for {
-            _ <- logHandler.error(e.getMessage)
-            _ <- query.alert(e.getMessage)
-          } yield ()
-        })
-      case _ => Applicative[F].unit
-    }
+    replyMessage: ReplyMessage[M]
+  ): F[Option[M]] = {
+    for {
+      msg <- query.message.traverse(msg => defaultMsgAnswer(msg)(replyMessage))
+      _   <- query.finish
+    } yield msg.flatten
+  }
+
+  def sendMessage[F[_]: Monad: TelegramClient, M](
+    answerFunc: ReplyMessage[M] => F[Option[M]],
+    msgContent: MessageContent[M],
+    keyboard:   Keyboard
+  ): Scenario[F, Option[M]] = {
+    val rm = ReplyMessage(msgContent, keyboard = keyboard)
+    Scenario.eval(answerFunc(rm))
+  }
+
+  def sendMessageWithCallback[F[_]: Monad: TelegramClient, M <: TelegramMessage](
+    answerFunc: ReplyMessage[M] => F[Option[M]],
+    msgContent: MessageContent[M],
+    keyboard:   Keyboard
+  ): Scenario[F, CallbackQuery] = {
+
+    for {
+      msg   <- sendMessage(answerFunc, msgContent, keyboard)
+      query <- Scenario.expect(callback(msg))
+    } yield query
   }
 }
