@@ -3,9 +3,10 @@ package domain
 object app {
 
   final case class AppConf(
-    db:    DbConf,
-    tg:    TgConf,
-    redis: RedisConf
+    db:     DbConf,
+    tg:     TgConf,
+    redis:  RedisConf,
+    bundle: Bundle
   )
 
   final case class DbConf(
@@ -23,5 +24,10 @@ object app {
 
   final case class RedisConf(
     uri: String
+  )
+
+  final case class Bundle(
+    path:      String,
+    languages: List[String]
   )
 }

@@ -5,20 +5,18 @@ import canoe.api.TelegramClient
 import canoe.models.Update
 import cats.MonadError
 import cats.effect.{Async, Resource}
-import cats.syntax.all._
 import core.Bot
-import dev.profunktor.redis4cats.Redis
-import dev.profunktor.redis4cats.effect.MkRedis
 import domain.app._
 import fs2.Stream
 import logger.LogHandler
 import repository.{QueueRepository, StudentRepository}
 import scenarios.{AuthScenarios, QueueScenarios}
 import service.{QueueService, StudentService}
+import util.bundle.ResourceBundleUtil
 
 //TODO remove Redis
 object AppContext {
-  def setUp[F[_]: Async: TelegramClient: MkRedis: MonadError[*[_], Throwable]](
+  def setUp[F[_]: Async: TelegramClient: MonadError[*[_], Throwable]](
     conf: AppConf
   ): Resource[F, Stream[F, Update]] = {
     implicit val logHandler: LogHandler[F] = logger.impl.log4jLogHandler("root")
@@ -28,25 +26,27 @@ object AppContext {
       migrator <- Resource.eval(migrator[F](conf.db))
       _        <- Resource.eval(migrator.migrate())
 
-      redis <- Redis[F].utf8(conf.redis.uri)
+      bundleUtil = ResourceBundleUtil.of(conf.bundle.path, conf.bundle.languages)
 
       studentRepository = StudentRepository.of(tx)
       authService       = StudentService.of(studentRepository)(implicitly[MonadError[F, Throwable]])
-      authScenario      = AuthScenarios.of(redis, authService)
+      authScenario      = AuthScenarios.of(authService, bundleUtil)
 
       queueRepository = QueueRepository.of(tx)
       queueService   <- Resource.eval(QueueService.of(studentRepository, queueRepository))
-      queueScenario   = QueueScenarios.of(redis, queueService, authService)
+      queueScenario   = QueueScenarios.of(queueService, authService, bundleUtil)
 
     } yield Bot
       .polling[F]
       .follow(
         authScenario.startBotScenario,
+        authScenario.signOutScenario,
         queueScenario.addToQueueScenario,
-        queueScenario.addFriendToQueue,
-        queueScenario.getQueueSeries,
-        queueScenario.getQueue,
-        queueScenario.removeFromQueue
+        queueScenario.addFriendToQueueScenario,
+        queueScenario.getQueueSeriesScenario,
+        queueScenario.getQueueScenario,
+        queueScenario.removeFromQueueScenario,
+        queueScenario.takeAnotherPlaceScenario
       )
   }
 }

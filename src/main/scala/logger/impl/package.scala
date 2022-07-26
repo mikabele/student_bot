@@ -13,9 +13,7 @@ package object impl {
     )
   }
 
-  def dummy[F[_]: Applicative]: LogHandler[F] = LogHandler.of(
-    println,
-    println,
-    println
-  )
+//  def dummy[F[_]: Applicative]: LogHandler[F] = LogHandler.of(
+
+//  )
 }

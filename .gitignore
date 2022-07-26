@@ -10,6 +10,8 @@
 
 src/main/scala/botAPI/ext
 
+src/main/resources/rus_properties
+
 # all idea
 
 .idea
