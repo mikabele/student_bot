@@ -5,7 +5,6 @@ object app {
   final case class AppConf(
     db:     DbConf,
     tg:     TgConf,
-    redis:  RedisConf,
     bundle: Bundle
   )
 
@@ -20,10 +19,6 @@ object app {
 
   final case class TgConf(
     token: String
-  )
-
-  final case class RedisConf(
-    uri: String
   )
 
   final case class Bundle(
