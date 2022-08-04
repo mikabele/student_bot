@@ -1,0 +1,5 @@
+package scenarios
+
+trait AdminScenarios {
+
+}

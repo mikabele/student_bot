@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+
+  #postgresql container
+  belevich_postgres14:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      - POSTGRES_DB=student_bot
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=postgres
+      - SERVICE_NAME=db
+      - SERVICE_5432_NAME=db
+    hostname: belevich_postgres14
+    container_name: belevich_postgres14
+    ports:
+      - "5432:54321"
+    healthcheck:
+      test: "pg_isready -h 127.0.0.1 -p 5432"
+      timeout: 10s
+      retries: 5
+
+  #server container
+  student_bot_server:
+    build:
+      context: .
+      dockerfile: sbt/Dockerfile
+    restart: always
+    container_name:   student_bot_server
+    links:
+      - belevich_postgres14
+    depends_on:
+      belevich_postgres14:
+        condition: service_healthy
+    expose:
+      - 8088
+    ports:
+      - "8088:8088"
+    volumes:
+      - ../.:/student_bot
+    working_dir: /student_bot
+    command: sbt run
+
+volumes:
+  target: # to exclude target folder from modules to avoid overriding
