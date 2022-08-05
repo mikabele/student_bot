@@ -18,7 +18,6 @@ src/main/resources/rus_properties
 
 #configs
 
-src/main/resources/application.conf
 
 # bsp
 .bsp
