@@ -1,9 +1,10 @@
 package syntax
 
 import canoe.models.CallbackQuery
-import canoe.models.messages.{TelegramMessage, TextMessage}
-import core.Messageable
+import canoe.models.messages.{DocumentMessage, TelegramMessage, TextMessage}
 import cats.syntax.all._
+import core.Messageable
+import core.Messageable.MyTelegramMessage
 
 object syntax {
 
@@ -23,5 +24,6 @@ object syntax {
     case Messageable.MyTelegramMessage(message: TextMessage) if message.text === str => message
   }
 
-  val textMessage: Expect[TextMessage] = { case Messageable.MyTelegramMessage(message: TextMessage) => message }
+  val textMessage:     Expect[TextMessage]     = { case Messageable.MyTelegramMessage(message: TextMessage) => message }
+  val documentMessage: Expect[DocumentMessage] = { case MyTelegramMessage(message: DocumentMessage) => message }
 }

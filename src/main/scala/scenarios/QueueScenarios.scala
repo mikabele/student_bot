@@ -20,10 +20,10 @@ trait QueueScenarios[F[_]] {
 
 object QueueScenarios {
   def of[F[_]: TelegramClient: Monad: Concurrent: LogHandler](
-    queueService: QueueService[F],
-    authService:  StudentService[F],
-    bundleUtil:   ResourceBundleUtil
+                                                               queueService: QueueService[F],
+                                                               studentService:  StudentService[F],
+                                                               bundleUtil:   ResourceBundleUtil
   ): QueueScenarios[F] = {
-    new QueueScenariosImpl[F](queueService, authService, bundleUtil)
+    new QueueScenariosImpl[F](queueService, studentService, bundleUtil)
   }
 }

@@ -16,9 +16,9 @@ trait AuthScenarios[F[_]] {
 
 object AuthScenarios {
   def of[F[_]: TelegramClient: MonadError[*[_], Throwable]: LogHandler](
-    authService: StudentService[F],
-    bundleUtil:  ResourceBundleUtil
+    studentService: StudentService[F],
+    bundleUtil:     ResourceBundleUtil
   ): AuthScenarios[F] = {
-    new AuthScenariosImpl[F](authService, bundleUtil)
+    new AuthScenariosImpl[F](studentService, bundleUtil)
   }
 }

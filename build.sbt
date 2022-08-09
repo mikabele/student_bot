@@ -5,8 +5,10 @@ ThisBuild / scalaVersion := "2.13.8"
 //TODO move to another project and deploy independently
 lazy val bot = Project(id = "botAPI", base = file("botAPI_ext"))
 
-lazy val root = Project(id = "root", base = file("."))
-  .dependsOn(bot)
+lazy val xmlParser = Project(id = "xmlParser", base = file("spata"))
+
+lazy val root = Project(id = "student_bot", base = file("."))
+  .dependsOn(bot,xmlParser)
 
 val tgApiVersion       = "0.6.0"
 val doobieVersion      = "1.0.0-RC2"
@@ -14,7 +16,7 @@ val circeVersion       = "0.14.1"
 val circeConfigVersion = "0.8.0"
 val enumeratumVersion  = "1.7.0"
 val redisVersion       = "1.2.0"
-val loggerVersion      = "2.17.2"
+val loggerVersion      = "2.18.0"
 
 libraryDependencies ++= Seq(
   "org.augustjune"          %% "canoe"                % tgApiVersion,
@@ -40,6 +42,7 @@ libraryDependencies ++= Seq(
   "dev.profunktor"          %% "redis4cats-effects"   % redisVersion,
   "org.apache.logging.log4j" % "log4j-api"            % loggerVersion,
   "org.apache.logging.log4j" % "log4j-core"           % loggerVersion,
+  "org.apache.logging.log4j" % "log4j-to-slf4j"       % loggerVersion,
   "org.slf4j"                % "slf4j-nop"            % "1.7.36",
 )
 
@@ -49,4 +52,19 @@ addCompilerPlugin(
 
 scalacOptions ++= Seq(
   "-Ymacro-annotations"
+)
+
+herokuAppName in Compile := "scala-student-bot"
+
+herokuJdkVersion in Compile := "11"
+
+herokuFatJar in Compile := Some((assemblyOutputPath in assembly).value)
+
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
+
+herokuProcessTypes in Compile := Map(
+  "worker" -> ("java -jar target/scala-2.13/" + name.value + "-assembly-" + version.value + ".jar")
 )

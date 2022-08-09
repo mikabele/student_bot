@@ -1,7 +1,7 @@
 package util
 
 import canoe.api.models.Keyboard
-import canoe.api.{callbackQueryApi, chatApi, TelegramClient}
+import canoe.api.{TelegramClient, callbackQueryApi, chatApi}
 import canoe.models.CallbackQuery
 import canoe.models.messages.{TelegramMessage, TextMessage}
 import canoe.models.outgoing.MessageContent
@@ -13,7 +13,7 @@ import core._
 import domain.message.ReplyMessage
 import error.BotError
 import logger.LogHandler
-import syntax.syntax.{callback, Expect}
+import syntax.syntax.{Expect, callback}
 import util.bundle.ResourceBundleUtil
 
 import java.util.ResourceBundle
@@ -44,7 +44,7 @@ object MarshallingUtil {
           case e: BotError => {
             for {
               _ <- Scenario.eval(logHandler.error(e.resourceString(bundle)))
-              _ <- Scenario.eval(msg.chat.send(e.resourceString(bundle), keyboard = mainMenuKeyboard(bundle)))
+              _ <- Scenario.eval(msg.chat.send(e.resourceString(bundle), keyboard = mainMenuUserKeyboard(bundle)))
             } yield ()
           }
           case ex: Throwable =>
@@ -97,4 +97,14 @@ object MarshallingUtil {
       query <- Scenario.expect(callback(msg))
     } yield query
   }
+
+//  def downloadFile[F[_], Resp](
+//                                filePath: String,
+//                                mapF:     Seq[Any] => Resp
+//                              )(
+//                                implicit telegramClientStreaming: TelegramClientStreaming[F]
+//                              ): StreamMethod[Resp] = {
+//
+//    telegramClientStreaming.Stream()
+//  }
 }

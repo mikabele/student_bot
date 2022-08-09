@@ -1,20 +1,22 @@
-package core.methods
+package core.streaming
 
-import canoe.api.{FailedMethod, ResponseDecodingError, TelegramClient}
+import canoe.api.{FailedMethod, ResponseDecodingError}
 import canoe.methods.Method
 import canoe.models.{InputFile, Response => TelegramResponse}
-import cats.effect.Concurrent
+import cats.effect.{Async, Concurrent, Resource, Sync}
 import cats.syntax.all._
 import fs2.Stream
-import org.typelevel.log4cats.Logger
 import org.http4s._
+import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.multipart.{Multipart, Part}
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-class Http4sTelegramClient[F[_]: Concurrent: Logger](token: String, client: Client[F])
-  extends TelegramClient[F]
+class Http4sTelegramClientExt[F[_]: Concurrent: Logger](token: String, client: Client[F])
+  extends TelegramClientStreaming[F]
     with Http4sClientDsl[F] {
 
   private val botApiUri: Uri = Uri.unsafeFromString("https://api.telegram.org") / s"bot$token"
@@ -51,11 +53,12 @@ class Http4sTelegramClient[F[_]: Concurrent: Logger](token: String, client: Clie
   private def jsonRequest[Req, Res](url: Uri, method: Method[Req, Res], action: Req): Request[F] =
     Method.POST(action, url)(jsonEncoderOf(method.encoder))
 
-  private def multipartRequest[Req, Res](url: Uri,
-                                         method: Method[Req, Res],
-                                         action: Req,
-                                         parts: List[Part[F]]
-                                        ): Request[F] = {
+  private def multipartRequest[Req, Res](
+    url:    Uri,
+    method: Method[Req, Res],
+    action: Req,
+    parts:  List[Part[F]]
+  ): Request[F] = {
     val params =
       method
         .encoder(action)
@@ -87,4 +90,17 @@ class Http4sTelegramClient[F[_]: Concurrent: Logger](token: String, client: Clie
         ) *>
           FailedMethod(m, input, failed).raiseError[F, A]
     }
+
+  override def downloadFile(pathToFile: String): Stream[F, Byte] = {
+    val uri = Uri.unsafeFromString("https://api.telegram.org/") / s"file/bot$token/" / pathToFile
+    val req = Request[F](Method.GET, uri)
+    client.stream(req).flatMap(_.body) //.through(_.map(_.toChar))
+  }
+}
+
+object Http4sTelegramClientExt {
+
+  implicit private def defaultLogger[F[_]: Sync]: Logger[F] = Slf4jLogger.getLogger[F]
+  def of[F[_]:                             Async](token: String): Resource[F, TelegramClientStreaming[F]] =
+    BlazeClientBuilder[F].resource.map(new Http4sTelegramClientExt[F](token, _))
 }

@@ -9,7 +9,7 @@ import util.bundle.StringFormatExtension._
 import java.util.ResourceBundle
 
 package object constants {
-  def mainMenuKeyboard(bundle: ResourceBundle): Keyboard.Reply = {
+  def mainMenuUserKeyboard(bundle: ResourceBundle): Keyboard.Reply = {
     val mainMenuBtns: Seq[Seq[KeyboardButton]] = Seq(
       Seq(
         KeyboardButton(bundle.getFormattedString("button.main.take_place")),
@@ -25,6 +25,17 @@ package object constants {
       )
     )
     val mainMenuMp: ReplyKeyboardMarkup = ReplyKeyboardMarkup(mainMenuBtns, resizeKeyboard = true.some)
+    Keyboard.Reply(mainMenuMp)
+  }
+
+  def mainMenuAdminKeyboard(bundle: ResourceBundle): Keyboard.Reply = {
+    val btns: Seq[Seq[KeyboardButton]] = Seq(
+      Seq(
+        KeyboardButton(bundle.getFormattedString("button.admin.add_group")),
+        KeyboardButton(bundle.getFormattedString("button.admin.add_queues"))
+      )
+    )
+    val mainMenuMp: ReplyKeyboardMarkup = ReplyKeyboardMarkup(btns, resizeKeyboard = true.some)
     Keyboard.Reply(mainMenuMp)
   }
 

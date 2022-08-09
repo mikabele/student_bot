@@ -1,12 +1,11 @@
 package scenarios.impl
 
 import canoe.api.models.Keyboard
-import canoe.api.{callbackQueryApi, TelegramClient}
+import canoe.api.{TelegramClient, callbackQueryApi}
 import canoe.methods.messages.SendMessage
 import canoe.models.CallbackQuery
 import canoe.models.messages.TextMessage
 import canoe.syntax._
-import cats.MonadError
 import cats.effect.Concurrent
 import cats.syntax.all._
 import constants._
@@ -14,7 +13,6 @@ import core._
 import domain.queue.AddToQueueOption
 import domain.user.StudentReadDomain
 import implicits.bot.containingWithBundle
-import implicits.circe._
 import logger.LogHandler
 import scenarios.QueueScenarios
 import service.{QueueService, StudentService}
@@ -28,12 +26,11 @@ import java.time.LocalDate
 import java.util.ResourceBundle
 
 class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
-  queueService: QueueService[F],
-  authService:  StudentService[F],
-  bundleUtil:   ResourceBundleUtil
+  queueService:   QueueService[F],
+  studentService: StudentService[F],
+  bundleUtil:     ResourceBundleUtil
 )(
-  implicit me: MonadError[F, Throwable],
-  logHandler:  LogHandler[F]
+  implicit logHandler:  LogHandler[F]
 ) extends QueueScenarios[F] {
 
   private def handleAddTOQueueOption(
@@ -64,11 +61,10 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
     }
   }
 
-  //TODO add string formatting from resource bundle
   override def addToQueueScenario: Scenario[F, Unit] = {
     scenario(containingWithBundle("button.main.take_place", bundleUtil), bundleUtil) { msg =>
       for {
-        student     <- Scenario.fromEitherF(authService.checkAuthUser(msg.from))
+        student     <- Scenario.fromEitherF(studentService.checkAuthUser(msg.from))
         flow_name    = "take_place"
         bundle       = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
         queueSeries <- Scenario.eval(queueService.getQueueSeries(student))
@@ -99,7 +95,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query1),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish", res),
-          mainMenuKeyboard(bundle)
+          mainMenuUserKeyboard(bundle)
         )
 
       } yield ()
@@ -110,14 +106,17 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
   override def getQueueSeriesScenario: Scenario[F, Unit] = {
     scenario(containingWithBundle("button.main.view_queue_series", bundleUtil), bundleUtil) { msg =>
       for {
-        student     <- Scenario.fromEitherF(authService.checkAuthUser(msg.from))
+        student     <- Scenario.fromEitherF(studentService.checkAuthUser(msg.from))
         flow_name    = "view_queue_series"
         bundle       = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
         queueSeries <- Scenario.eval(queueService.getQueueSeries(student))
         _ <- sendMessage(
           defaultMsgAnswer[F, TextMessage](msg),
-          bundle.getFormattedString(s"flow.${flow_name}.msg.finish", queueSeries),
-          mainMenuKeyboard(bundle)
+          bundle.getFormattedString(
+            s"flow.${flow_name}.msg.finish",
+            queueSeries.map(qs => "- " + qs.name + "\n").reduce(_ |+| _)
+          ),
+          mainMenuUserKeyboard(bundle)
         )
 
       } yield ()
@@ -127,7 +126,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
   override def getQueueScenario: Scenario[F, Unit] = {
     scenario(containingWithBundle("button.main.view_queues", bundleUtil), bundleUtil) { msg =>
       for {
-        student     <- Scenario.fromEitherF(authService.checkAuthUser(msg.from))
+        student     <- Scenario.fromEitherF(studentService.checkAuthUser(msg.from))
         flow_name    = "view_queue"
         bundle       = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
         queueSeries <- Scenario.eval(queueService.getQueueSeries(student))
@@ -149,7 +148,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultMsgAnswer[F, TextMessage](msg),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish", queue),
-          mainMenuKeyboard(bundle)
+          mainMenuUserKeyboard(bundle)
         )
 
       } yield ()
@@ -159,24 +158,24 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
   override def addFriendToQueueScenario: Scenario[F, Unit] =
     scenario(containingWithBundle("button.main.add_friend_place", bundleUtil), bundleUtil) { msg =>
       for {
-        student  <- Scenario.fromEitherF(authService.checkAuthUser(msg.from))
+        student  <- Scenario.fromEitherF(studentService.checkAuthUser(msg.from))
         flow_name = "add_friend_to_queue"
         bundle    = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
-        courses  <- Scenario.eval(authService.getCourses(student.university))
+        courses  <- Scenario.eval(studentService.getCourses(student.university))
         query1 <- sendMessageWithCallback(
           defaultMsgAnswer[F, TextMessage](msg),
           bundle.getFormattedString(s"flow.${flow_name}.msg.courses"),
           coursesInlineKeyboard(courses)
         )
         course  = query1.data.get.toInt
-        groups <- Scenario.eval(authService.getGroups(student.university, course))
+        groups <- Scenario.eval(studentService.getGroups(student.university, course))
         query2 <- sendMessageWithCallback(
           defaultCallbackAnswer[F, TextMessage](query1),
           bundle.getFormattedString(s"flow.${flow_name}.msg.groups"),
           groupsInlineKeyboard(groups)
         )
         group     = query2.data.get.toInt
-        students <- Scenario.eval(authService.getStudents(student.university, course, group))
+        students <- Scenario.eval(studentService.getStudents(student.university, course, group))
         query3 <- sendMessageWithCallback(
           defaultCallbackAnswer[F, TextMessage](query2),
           bundle.getFormattedString(s"flow.${flow_name}.msg.students"),
@@ -212,7 +211,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query3),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish"),
-          mainMenuKeyboard(bundle)
+          mainMenuUserKeyboard(bundle)
         )
 
         queue = queueSeries.find(_.id == qsId).get
@@ -228,7 +227,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
   override def removeFromQueueScenario: Scenario[F, Unit] =
     scenario(containingWithBundle("button.main.remove_place", bundleUtil), bundleUtil) { msg =>
       for {
-        student     <- Scenario.fromEitherF(authService.checkAuthUser(msg.from))
+        student     <- Scenario.fromEitherF(studentService.checkAuthUser(msg.from))
         flow_name    = "remove_place"
         bundle       = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
         queueSeries <- Scenario.eval(queueService.getQueueSeries(student))
@@ -250,7 +249,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query1),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish"),
-          mainMenuKeyboard(bundle)
+          mainMenuUserKeyboard(bundle)
         )
 
       } yield ()
@@ -259,7 +258,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
   override def takeAnotherPlaceScenario: Scenario[F, Unit] =
     scenario(containingWithBundle("button.main.update_place", bundleUtil), bundleUtil) { msg =>
       for {
-        student     <- Scenario.fromEitherF(authService.checkAuthUser(msg.from))
+        student     <- Scenario.fromEitherF(studentService.checkAuthUser(msg.from))
         flow_name    = "take_another_place"
         bundle       = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
         queueSeries <- Scenario.eval(queueService.getQueueSeries(student))
@@ -290,7 +289,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query3),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish", res),
-          mainMenuKeyboard(bundle)
+          mainMenuUserKeyboard(bundle)
         )
 
       } yield ()
