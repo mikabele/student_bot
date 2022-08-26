@@ -9,6 +9,7 @@ import domain.queue._
 import domain.user.StudentReadDomain
 import error.BotError
 import error.impl.queue._
+import org.typelevel.log4cats.Logger
 import repository.{QueueRepository, StudentRepository}
 import service.QueueService
 
@@ -18,6 +19,8 @@ class QueueServiceImpl[F[_]: Monad](
   studentRepository:   StudentRepository[F],
   queueRepository:     QueueRepository[F],
   addToQueueSemaphore: Semaphore[F]
+)(
+  implicit logger: Logger[F]
 ) extends QueueService[F] {
   override def getQueueSeries(student: StudentReadDomain): F[List[QueueSeries]] = {
     queueRepository.getQueueSeries(student)
@@ -93,13 +96,19 @@ class QueueServiceImpl[F[_]: Monad](
     date:    LocalDate
   ): F[Either[BotError, List[Int]]] = {
     val res = for {
+      _ <- EitherT.liftF(logger.debug(s"Params - qsID = ${qsId}, date = ${date}"))
       queueOpt <- EitherT.liftF(queueRepository.getQueue(qsId, date)): EitherT[F, BotError, Option[QueueDbReadDomain]]
+      _        <- EitherT.liftF(logger.debug(s"One has got a queue ${queueOpt}"))
       queueId <- EitherT.liftF(
         queueOpt.fold(queueRepository.createQueue(qsId, date))(value => value.id.pure)
       ): EitherT[F, BotError, Int]
+      _        <- EitherT.liftF(logger.debug(s"Queue id - ${queueId}"))
       cnt      <- EitherT.liftF(studentRepository.getGroupSize(student)): EitherT[F, BotError, Int]
       allPlaces = (1 to cnt).toList
       records  <- EitherT.liftF(queueRepository.getRecords(queueId)):     EitherT[F, BotError, List[QueueRecordReadDomain]]
+      _ <- EitherT.liftF(
+        logger.debug(s"Got queue record places from DB - ${records.map(_.place.toString).reduce(_ |+| "\n" |+| _)}")
+      ): EitherT[F, BotError, Unit]
     } yield allPlaces.diff(records.map(_.place))
 
     res.value
@@ -151,9 +160,7 @@ class QueueServiceImpl[F[_]: Monad](
         .leftFlatMap(e => {
           for {
             _ <- EitherT.liftF(addToQueueSemaphore.release)
-
-            res <- EitherT.left[Int](e.pure)
-          } yield res
+          } yield e
         }): EitherT[F, BotError, Unit]
       cnt <- EitherT.liftF(queueRepository.takeAnotherPlace(student.userId, queueId, place))
       _   <- EitherT.liftF(addToQueueSemaphore.release)

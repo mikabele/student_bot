@@ -5,6 +5,7 @@ import domain.queue
 import domain.queue.{QueueDbReadDomain, QueueSeries}
 import domain.user.StudentReadDomain
 import doobie.util.transactor.Transactor
+import org.typelevel.log4cats.Logger
 import repository.impl.doobie.DoobieQueueRepositoryImpl
 
 import java.time.LocalDate
@@ -26,7 +27,7 @@ trait QueueRepository[F[_]] {
 }
 
 object QueueRepository {
-  def of[F[_]: Async](tx: Transactor[F]): QueueRepository[F] = {
+  def of[F[_]: Async: Logger](tx: Transactor[F]): QueueRepository[F] = {
     new DoobieQueueRepositoryImpl[F](tx)
   }
 }

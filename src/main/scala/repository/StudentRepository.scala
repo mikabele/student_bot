@@ -4,6 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.kernel.Async
 import domain.user.StudentReadDomain
 import doobie.util.transactor.Transactor
+import org.typelevel.log4cats.Logger
 import repository.impl.doobie.DoobieStudentRepositoryImpl
 
 trait StudentRepository[F[_]] {
@@ -29,7 +30,7 @@ trait StudentRepository[F[_]] {
 }
 
 object StudentRepository {
-  def of[F[_]: Async](tx: Transactor[F]): StudentRepository[F] = {
+  def of[F[_]: Async: Logger](tx: Transactor[F]): StudentRepository[F] = {
     new DoobieStudentRepositoryImpl[F](tx)
   }
 }

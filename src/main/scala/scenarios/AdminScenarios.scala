@@ -1,12 +1,6 @@
 package scenarios
 
-import canoe.api.TelegramClient
-import cats.effect.Sync
-import core.Scenario
-import core.streaming.TelegramClientStreaming
-import logger.LogHandler
-import scenarios.impl.AdminScenariosImpl
-import util.bundle.ResourceBundleUtil
+import canoe.api.Scenario
 
 trait AdminScenarios[F[_]] {
   def addGroupScenario: Scenario[F, Unit]
@@ -15,9 +9,9 @@ trait AdminScenarios[F[_]] {
 }
 
 object AdminScenarios {
-  def of[F[_]: TelegramClient: TelegramClientStreaming: Sync: LogHandler](
-    bundleUtil: ResourceBundleUtil
-  ): AdminScenarios[F] = {
-    new AdminScenariosImpl[F](bundleUtil)
-  }
+//  def of[F[_]: TelegramClient: Sync: LogHandler](
+//    bundleUtil: ResourceBundleUtil
+//  ): AdminScenarios[F] = {
+//    new AdminScenariosImpl[F](bundleUtil)
+//  }
 }

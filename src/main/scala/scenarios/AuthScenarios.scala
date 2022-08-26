@@ -1,9 +1,8 @@
 package scenarios
 
-import canoe.api.TelegramClient
+import canoe.api.{Scenario, TelegramClient}
 import cats.MonadError
-import core.Scenario
-import logger.LogHandler
+import org.typelevel.log4cats.Logger
 import scenarios.impl.AuthScenariosImpl
 import service.StudentService
 import util.bundle.ResourceBundleUtil
@@ -15,7 +14,7 @@ trait AuthScenarios[F[_]] {
 }
 
 object AuthScenarios {
-  def of[F[_]: TelegramClient: MonadError[*[_], Throwable]: LogHandler](
+  def of[F[_]: TelegramClient: MonadError[*[_], Throwable]: Logger](
     studentService: StudentService[F],
     bundleUtil:     ResourceBundleUtil
   ): AuthScenarios[F] = {

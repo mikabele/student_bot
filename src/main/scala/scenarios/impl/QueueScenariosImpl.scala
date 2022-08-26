@@ -1,7 +1,7 @@
 package scenarios.impl
 
 import canoe.api.models.Keyboard
-import canoe.api.{TelegramClient, callbackQueryApi}
+import canoe.api.{callbackQueryApi, Scenario, TelegramClient}
 import canoe.methods.messages.SendMessage
 import canoe.models.CallbackQuery
 import canoe.models.messages.TextMessage
@@ -9,11 +9,10 @@ import canoe.syntax._
 import cats.effect.Concurrent
 import cats.syntax.all._
 import constants._
-import core._
 import domain.queue.AddToQueueOption
 import domain.user.StudentReadDomain
 import implicits.bot.containingWithBundle
-import logger.LogHandler
+import org.typelevel.log4cats.Logger
 import scenarios.QueueScenarios
 import service.{QueueService, StudentService}
 import util.DateValidationUtil
@@ -30,7 +29,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
   studentService: StudentService[F],
   bundleUtil:     ResourceBundleUtil
 )(
-  implicit logHandler:  LogHandler[F]
+  implicit logger: Logger[F]
 ) extends QueueScenarios[F] {
 
   private def handleAddTOQueueOption(
@@ -80,7 +79,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
           Keyboard.Unchanged
         )
 
-        msg2 <- Scenario.expect(dateValidation(syntax.syntax.textMessage))
+        msg2 <- Scenario.expect(dateValidation(textMessage))
         date  = LocalDate.parse(msg2.text, DateValidationUtil.pattern)
         query3 <- sendMessageWithCallback(
           defaultCallbackAnswer[F, TextMessage](query1),
@@ -114,7 +113,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
           defaultMsgAnswer[F, TextMessage](msg),
           bundle.getFormattedString(
             s"flow.${flow_name}.msg.finish",
-            queueSeries.map(qs => "- " + qs.name + "\n").reduce(_ |+| _)
+            queueSeries.map(qs => "- " + qs.name).reduce(_ |+| "\n" |+| _)
           ),
           mainMenuUserKeyboard(bundle)
         )
@@ -142,12 +141,13 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
           Keyboard.Unchanged
         )
 
-        msg2  <- Scenario.expect(dateValidation(syntax.syntax.textMessage))
-        date   = LocalDate.parse(msg2.text, DateValidationUtil.pattern)
-        queue <- Scenario.fromEitherF(queueService.getQueue(qsId, date))
+        msg2         <- Scenario.expect(dateValidation(textMessage))
+        date          = LocalDate.parse(msg2.text, DateValidationUtil.pattern)
+        queue        <- Scenario.fromEitherF(queueService.getQueue(qsId, date))
+        student_names = queue.records.map(q => "-" |+| q.student.lastName |+| " " |+| q.student.firstName)
         _ <- sendMessage(
           defaultMsgAnswer[F, TextMessage](msg),
-          bundle.getFormattedString(s"flow.${flow_name}.msg.finish", queue),
+          bundle.getFormattedString(s"flow.${flow_name}.msg.finish", student_names.reduce(_ |+| "\n" |+| _)),
           mainMenuUserKeyboard(bundle)
         )
 
@@ -196,7 +196,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
           Keyboard.Unchanged
         )
 
-        msg2 <- Scenario.expect(dateValidation(syntax.syntax.textMessage))
+        msg2 <- Scenario.expect(dateValidation(textMessage))
         date  = LocalDate.parse(msg2.text, DateValidationUtil.pattern)
         query3 <- sendMessageWithCallback(
           defaultCallbackAnswer[F, TextMessage](query1),
@@ -243,7 +243,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
           Keyboard.Unchanged
         )
 
-        msg2 <- Scenario.expect(dateValidation(syntax.syntax.textMessage))
+        msg2 <- Scenario.expect(dateValidation(textMessage))
         date  = LocalDate.parse(msg2.text, DateValidationUtil.pattern)
         _    <- Scenario.fromEitherF(queueService.removeFromQueue(student, qsId, date))
         _ <- sendMessage(
@@ -274,7 +274,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
           Keyboard.Unchanged
         )
 
-        msg2 <- Scenario.expect(dateValidation(syntax.syntax.textMessage))
+        msg2 <- Scenario.expect(dateValidation(textMessage))
         date  = LocalDate.parse(msg2.text, DateValidationUtil.pattern)
         query3 <- sendMessageWithCallback(
           defaultCallbackAnswer[F, TextMessage](query1),

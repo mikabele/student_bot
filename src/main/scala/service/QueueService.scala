@@ -7,6 +7,7 @@ import domain.queue
 import domain.queue.{AddToQueueOption, Queue}
 import domain.user.StudentReadDomain
 import error.BotError
+import org.typelevel.log4cats.Logger
 import repository.{QueueRepository, StudentRepository}
 import service.impl.QueueServiceImpl
 
@@ -38,7 +39,7 @@ trait QueueService[F[_]] {
 }
 
 object QueueService {
-  def of[F[_]: Concurrent](
+  def of[F[_]: Concurrent: Logger](
     studentRepository: StudentRepository[F],
     queueRepository:   QueueRepository[F]
   ): F[QueueService[F]] = {

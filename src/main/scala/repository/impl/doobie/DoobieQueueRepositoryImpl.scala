@@ -8,13 +8,14 @@ import doobie.Fragment
 import doobie.implicits._
 import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
+import org.typelevel.log4cats.Logger
 import repository.QueueRepository
-import repository.impl.doobie.logger.logger.log4jLogger
+import repository.impl.doobie.logger.logger._
 import util.MappingUtil.DbDomainMappingUtil._
 
 import java.time.LocalDate
 
-class DoobieQueueRepositoryImpl[F[_]: Sync](tx: Transactor[F]) extends QueueRepository[F] {
+class DoobieQueueRepositoryImpl[F[_]: Sync: Logger](tx: Transactor[F]) extends QueueRepository[F] {
 
   private val getQueueSeriesQuery = Fragment.const("SELECT id,name,university,course,\"group\" FROM queue_series")
   private val takePlaceQuery      = Fragment.const("INSERT INTO record(queue_id,student_id,place) VALUES")

@@ -1,9 +1,9 @@
 package implicits
 
+import canoe.models.Messageable
 import canoe.models.messages.TextMessage
+import canoe.syntax.Expect
 import cats.implicits.catsSyntaxEq
-import core.Messageable
-import syntax.syntax.Expect
 import util.bundle.ResourceBundleUtil
 
 object bot {

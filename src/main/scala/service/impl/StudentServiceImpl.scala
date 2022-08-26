@@ -6,10 +6,11 @@ import cats.data.EitherT
 import domain.user._
 import error.BotError
 import error.impl.auth._
+import org.typelevel.log4cats.Logger
 import repository.StudentRepository
 import service.StudentService
 
-class StudentServiceImpl[F[_]: Monad](authRepository: StudentRepository[F]) extends StudentService[F] {
+class StudentServiceImpl[F[_]: Monad](authRepository: StudentRepository[F])(implicit logger: Logger[F]) extends StudentService[F] {
 
   override def registerUser(userId: Int, user: User): F[Either[BotError, Int]] = {
     val res = for {

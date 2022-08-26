@@ -7,10 +7,11 @@ import doobie.Fragment
 import doobie.implicits._
 import doobie.util.fragments.in
 import doobie.util.transactor.Transactor
+import org.typelevel.log4cats.Logger
 import repository.StudentRepository
-import repository.impl.doobie.logger.logger.log4jLogger
+import repository.impl.doobie.logger.logger._
 
-class DoobieStudentRepositoryImpl[F[_]: Async](tx: Transactor[F]) extends StudentRepository[F] {
+class DoobieStudentRepositoryImpl[F[_]: Async:Logger](tx: Transactor[F]) extends StudentRepository[F] {
 
   private val getStudentsQuery =
     Fragment.const("SELECT id,first_name,last_name,university,course,\"group\",tg_user_id FROM student")

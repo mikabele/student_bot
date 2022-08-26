@@ -2,48 +2,42 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.8"
 
-//TODO move to another project and deploy independently
-lazy val bot = Project(id = "botAPI", base = file("botAPI_ext"))
+ThisBuild / organization := "student_bot_corp"
 
-lazy val xmlParser = Project(id = "xmlParser", base = file("spata"))
-
-lazy val root = Project(id = "student_bot", base = file("."))
-  .dependsOn(bot,xmlParser)
-
-val tgApiVersion       = "0.6.0"
 val doobieVersion      = "1.0.0-RC2"
 val circeVersion       = "0.14.1"
 val circeConfigVersion = "0.8.0"
 val enumeratumVersion  = "1.7.0"
 val redisVersion       = "1.2.0"
 val loggerVersion      = "2.18.0"
+val log4CatsVersion    = "2.4.0"
+val slf4jVersion       = "1.7.36"
+val logbackVersion     = "1.2.11"
 
 libraryDependencies ++= Seq(
-  "org.augustjune"          %% "canoe"                % tgApiVersion,
-  "org.tpolecat"            %% "doobie-core"          % doobieVersion,
-  "org.tpolecat"            %% "doobie-postgres"      % doobieVersion,
-  "org.tpolecat"            %% "doobie-specs2"        % doobieVersion,
-  "org.tpolecat"            %% "doobie-refined"       % doobieVersion,
-  "org.tpolecat"            %% "doobie-hikari"        % doobieVersion,
-  "org.flywaydb"             % "flyway-core"          % "8.5.12",
-  "io.circe"                %% "circe-core"           % circeVersion,
-  "io.circe"                %% "circe-generic"        % circeVersion,
-  "io.circe"                %% "circe-generic-extras" % circeVersion,
-  "io.circe"                %% "circe-optics"         % circeVersion,
-  "io.circe"                %% "circe-parser"         % circeVersion,
-  "io.circe"                %% "circe-config"         % circeConfigVersion,
-  "io.circe"                %% "circe-core"           % circeVersion,
-  "io.circe"                %% "circe-generic"        % circeVersion,
-  "io.circe"                %% "circe-generic-extras" % circeVersion,
-  "io.circe"                %% "circe-optics"         % circeVersion,
-  "io.circe"                %% "circe-parser"         % circeVersion,
-  "io.circe"                %% "circe-refined"        % circeVersion,
-  "com.beachape"            %% "enumeratum-circe"     % enumeratumVersion,
-  "dev.profunktor"          %% "redis4cats-effects"   % redisVersion,
-  "org.apache.logging.log4j" % "log4j-api"            % loggerVersion,
-  "org.apache.logging.log4j" % "log4j-core"           % loggerVersion,
-  "org.apache.logging.log4j" % "log4j-to-slf4j"       % loggerVersion,
-  "org.slf4j"                % "slf4j-nop"            % "1.7.36",
+  "org.tpolecat"   %% "doobie-core"          % doobieVersion,
+  "org.tpolecat"   %% "doobie-postgres"      % doobieVersion,
+  "org.tpolecat"   %% "doobie-specs2"        % doobieVersion,
+  "org.tpolecat"   %% "doobie-refined"       % doobieVersion,
+  "org.tpolecat"   %% "doobie-hikari"        % doobieVersion,
+  "io.circe"       %% "circe-core"           % circeVersion,
+  "io.circe"       %% "circe-generic"        % circeVersion,
+  "io.circe"       %% "circe-generic-extras" % circeVersion,
+  "io.circe"       %% "circe-optics"         % circeVersion,
+  "io.circe"       %% "circe-parser"         % circeVersion,
+  "io.circe"       %% "circe-config"         % circeConfigVersion,
+  "io.circe"       %% "circe-core"           % circeVersion,
+  "io.circe"       %% "circe-generic"        % circeVersion,
+  "io.circe"       %% "circe-generic-extras" % circeVersion,
+  "io.circe"       %% "circe-optics"         % circeVersion,
+  "io.circe"       %% "circe-parser"         % circeVersion,
+  "io.circe"       %% "circe-refined"        % circeVersion,
+  "com.beachape"   %% "enumeratum-circe"     % enumeratumVersion,
+  "dev.profunktor" %% "redis4cats-effects"   % redisVersion,
+  "org.typelevel"  %% "log4cats-core"        % log4CatsVersion, // Only if you want to Support Any Backend
+  "org.typelevel"  %% "log4cats-slf4j"       % log4CatsVersion,
+  "org.slf4j"       % "slf4j-api"            % slf4jVersion,
+  "ch.qos.logback"  % "logback-classic"      % logbackVersion,
 )
 
 addCompilerPlugin(
@@ -54,17 +48,24 @@ scalacOptions ++= Seq(
   "-Ymacro-annotations"
 )
 
-herokuAppName in Compile := "scala-student-bot"
+Compile / unmanagedJars += file("lib/canoe-assembly-0.1.0-SNAPSHOT.jar")
 
-herokuJdkVersion in Compile := "11"
+lazy val root = Project(
+  id   = "student_bot",
+  base = file("."),
+)
 
-herokuFatJar in Compile := Some((assemblyOutputPath in assembly).value)
+Compile / herokuAppName := "scala-student-bot"
 
-assemblyMergeStrategy in assembly := {
+Compile / herokuJdkVersion := "11"
+
+Compile / herokuFatJar := Some((assembly / assemblyOutputPath).value)
+
+assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
 }
 
-herokuProcessTypes in Compile := Map(
+Compile / herokuProcessTypes := Map(
   "worker" -> ("java -jar target/scala-2.13/" + name.value + "-assembly-" + version.value + ".jar")
 )

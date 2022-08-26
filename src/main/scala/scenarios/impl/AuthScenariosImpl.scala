@@ -1,31 +1,26 @@
 package scenarios.impl
 
-import canoe.api.TelegramClient
 import canoe.api.models.Keyboard
+import canoe.api.{Scenario, TelegramClient}
 import canoe.models._
 import canoe.models.messages.TextMessage
-import canoe.syntax.textContent
-import cats.MonadError
+import canoe.syntax.{command, textContent}
+import cats.Monad
 import constants._
-import core.Scenario
 import error.impl.auth._
-import logger.LogHandler
+import org.typelevel.log4cats.Logger
 import scenarios.AuthScenarios
 import service.StudentService
-import syntax.syntax.command
 import util.MarshallingUtil._
 import util.bundle.ResourceBundleUtil
 import util.bundle.StringFormatExtension._
 
 import scala.language.implicitConversions
 
-class AuthScenariosImpl[F[_]: TelegramClient](
+class AuthScenariosImpl[F[_]: TelegramClient:Monad](
                                                studentService: StudentService[F],
                                                bundleUtil:  ResourceBundleUtil
-)(
-  implicit me: MonadError[F, Throwable],
-  logHandler:  LogHandler[F]
-) extends AuthScenarios[F] {
+)(implicit logger: Logger[F]) extends AuthScenarios[F] {
 
   private def checkNonAuthorizedUser(user: Option[User]): Scenario[F, Unit] = {
     for {
