@@ -96,7 +96,7 @@ class QueueServiceImpl[F[_]: Monad](
     date:    LocalDate
   ): F[Either[BotError, List[Int]]] = {
     val res = for {
-      _ <- EitherT.liftF(logger.debug(s"Params - qsID = ${qsId}, date = ${date}"))
+      _        <- EitherT.liftF(logger.debug(s"Params - qsID = ${qsId}, date = ${date}"))
       queueOpt <- EitherT.liftF(queueRepository.getQueue(qsId, date)): EitherT[F, BotError, Option[QueueDbReadDomain]]
       _        <- EitherT.liftF(logger.debug(s"One has got a queue ${queueOpt}"))
       queueId <- EitherT.liftF(
@@ -104,10 +104,11 @@ class QueueServiceImpl[F[_]: Monad](
       ): EitherT[F, BotError, Int]
       _        <- EitherT.liftF(logger.debug(s"Queue id - ${queueId}"))
       cnt      <- EitherT.liftF(studentRepository.getGroupSize(student)): EitherT[F, BotError, Int]
+      _        <- EitherT.liftF(logger.debug(s"Group size - ${cnt}"))
       allPlaces = (1 to cnt).toList
       records  <- EitherT.liftF(queueRepository.getRecords(queueId)):     EitherT[F, BotError, List[QueueRecordReadDomain]]
       _ <- EitherT.liftF(
-        logger.debug(s"Got queue record places from DB - ${records.map(_.place.toString).reduce(_ |+| "\n" |+| _)}")
+        logger.debug(s"Got queue record places from DB - ${records.map(_.place.toString).fold("")(_ |+| "\n" |+| _)}")
       ): EitherT[F, BotError, Unit]
     } yield allPlaces.diff(records.map(_.place))
 

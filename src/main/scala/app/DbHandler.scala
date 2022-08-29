@@ -1,7 +1,6 @@
 package app
 
 import cats.effect.{Async, Resource}
-import cats.implicits._
 import domain.app.DbConf
 import doobie.hikari.HikariTransactor
 import doobie.{ExecutionContexts, Transactor}
