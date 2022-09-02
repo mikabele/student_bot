@@ -147,7 +147,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         student_names = queue.records.map(q => "-" |+| q.student.lastName |+| " " |+| q.student.firstName)
         _ <- sendMessage(
           defaultMsgAnswer[F, TextMessage](msg),
-          bundle.getFormattedString(s"flow.${flow_name}.msg.finish", student_names.reduce(_ |+| "\n" |+| _)),
+          bundle.getFormattedString(s"flow.${flow_name}.msg.finish", student_names.fold("")(_ |+| "\n" |+| _)),
           mainMenuUserKeyboard(bundle)
         )
 

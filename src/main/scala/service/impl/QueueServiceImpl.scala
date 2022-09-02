@@ -124,7 +124,13 @@ class QueueServiceImpl[F[_]: Monad](
         .liftF(studentRepository.getStudentsByIds(studentIds)): EitherT[F, BotError, List[
         StudentReadDomain
       ]]
+      _ <- EitherT.liftF(
+        logger.debug(s"All students in queue - ${students.map(_.toString).fold("")(_ |+| _ |+| "\n")}")
+      ): EitherT[F, BotError, Unit]
       queueRecords = records.map(qr => QueueRecord(qr.id, qr.place, students.find(_.userId == qr.studentId).get))
+      _ <- EitherT.liftF(
+      logger.debug(s"All records with students - ${queueRecords.map(_.toString).fold ("") (_ |+| _ |+| "\n")}")
+      ): EitherT[F, BotError, Unit]
     } yield Queue(queue.id, queue.queueSeriesId, queue.date, queueRecords)
 
     res.value

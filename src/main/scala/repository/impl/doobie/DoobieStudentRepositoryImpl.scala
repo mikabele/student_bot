@@ -2,24 +2,26 @@ package repository.impl.doobie
 
 import cats.data.NonEmptyList
 import cats.effect.Async
-import domain.user.StudentReadDomain
+import domain.user._
 import doobie.Fragment
 import doobie.implicits._
-import doobie.util.fragments.in
+import doobie.postgres.implicits._
+import doobie.util.fragments.{in, values}
 import doobie.util.transactor.Transactor
 import org.typelevel.log4cats.Logger
 import repository.StudentRepository
 import repository.impl.doobie.logger.logger._
 
-class DoobieStudentRepositoryImpl[F[_]: Async:Logger](tx: Transactor[F]) extends StudentRepository[F] {
+class DoobieStudentRepositoryImpl[F[_]: Async: Logger](tx: Transactor[F]) extends StudentRepository[F] {
 
   private val getStudentsQuery =
-    Fragment.const("SELECT id,first_name,last_name,university,course,\"group\",tg_user_id FROM student")
+    Fragment.const("SELECT id,first_name,last_name,university,course,\"group\",st_role,tg_user_id FROM student")
   private val getGroupsQuery       = Fragment.const("SELECT DISTINCT \"group\" FROM student")
   private val getCoursesQuery      = Fragment.const("SELECT DISTINCT course FROM student")
   private val updateUserQuery      = Fragment.const("UPDATE student SET ")
   private val getGroupSizeQuery    = Fragment.const("SELECT COUNT(*) FROM student")
   private val getUniversitiesQuery = Fragment.const("SELECT DISTINCT university FROM student")
+  private val addGroupQuery        = Fragment.const("INSERT INTO student(last_name,first_name,course,\"group\",university) ")
 
   override def getStudents(university: String, course: Int, group: Int): F[List[StudentReadDomain]] = {
     (getStudentsQuery ++ fr" WHERE university = $university AND course = $course AND " ++ Fragment.const(
@@ -66,5 +68,9 @@ class DoobieStudentRepositoryImpl[F[_]: Async:Logger](tx: Transactor[F]) extends
 
   override def getUniversities(): F[List[String]] = {
     getUniversitiesQuery.query[String].to[List].transact(tx)
+  }
+
+  override def addGroup(students: NonEmptyList[StudentCreateDomain]): F[Int] = {
+    (addGroupQuery ++ values(students)).update.run.transact(tx)
   }
 }

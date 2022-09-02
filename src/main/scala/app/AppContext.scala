@@ -10,7 +10,7 @@ import fs2.Stream
 import org.typelevel.log4cats._
 import org.typelevel.log4cats.slf4j._
 import repository.{QueueRepository, StudentRepository}
-import scenarios.{AuthScenarios, QueueScenarios}
+import scenarios.{AdminScenarios, AuthScenarios, QueueScenarios}
 import service.{QueueService, StudentService}
 import util.bundle.ResourceBundleUtil
 
@@ -32,7 +32,7 @@ object AppContext {
       queueService   <- Resource.eval(QueueService.of(studentRepository, queueRepository))
       queueScenario   = QueueScenarios.of(queueService, authService, bundleUtil)
 
-      //adminScenarios = AdminScenarios.of(bundleUtil)
+      adminScenarios = AdminScenarios.of(authService,bundleUtil)
 
     } yield Bot
       .polling[F]
@@ -45,7 +45,7 @@ object AppContext {
         queueScenario.getQueueScenario,
         queueScenario.removeFromQueueScenario,
         queueScenario.takeAnotherPlaceScenario,
-        //adminScenarios.addGroupScenario
+        adminScenarios.addGroupScenario
       )
   }
 }

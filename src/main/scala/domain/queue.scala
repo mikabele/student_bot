@@ -1,7 +1,7 @@
 package domain
 
 import domain.user.StudentReadDomain
-import enumeratum.{CirceEnum, Enum, EnumEntry}
+import enumeratum.{ Enum, EnumEntry}
 
 import java.util.Date
 
@@ -51,7 +51,7 @@ object queue {
 
   sealed trait AddToQueueOption extends EnumEntry
 
-  object AddToQueueOption extends Enum[AddToQueueOption] with CirceEnum[AddToQueueOption] {
+  object AddToQueueOption extends Enum[AddToQueueOption] {
     final case object PushBack extends AddToQueueOption
     final case object PushFront extends AddToQueueOption
     final case object TakePlace extends AddToQueueOption

@@ -22,6 +22,8 @@ trait StudentService[F[_]] {
   def getStudents(university: String, course: Int, group: Int): F[List[StudentReadDomain]]
 
   def getUniversities: F[List[String]]
+
+  def addGroup(students: List[StudentCreateDomain]): F[Either[BotError, Int]]
 }
 
 object StudentService {
