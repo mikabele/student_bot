@@ -1,16 +1,16 @@
 package repository.impl.doobie.logger
 
 import doobie.util.log._
-import org.apache.logging.log4j._
+import org.slf4j.LoggerFactory
+
 
 object logger {
 
-  implicit val log4jLogger: LogHandler = {
-    val log4jLogger = LogManager.getLogger("database_layer")
+  implicit val loggerForDoobie: LogHandler = {
+    val logger = LoggerFactory.getLogger("repository")
     LogHandler {
-
       case Success(s, a, e1, e2) =>
-        log4jLogger.info(s"""Successful Statement Execution:
+        logger.info(s"""Successful Statement Execution:
                             |
                             |  ${s.split("\n").dropWhile(_.trim.isEmpty).mkString("\n  ")}
                             |
@@ -19,7 +19,7 @@ object logger {
       """.stripMargin)
 
       case ProcessingFailure(s, a, e1, e2, t) =>
-        log4jLogger.error(s"""Failed Resultset Processing:
+        logger.error(s"""Failed Resultset Processing:
                              |
                              |  ${s.split("\n").dropWhile(_.trim.isEmpty).mkString("\n  ")}
                              |
@@ -29,7 +29,7 @@ object logger {
       """.stripMargin)
 
       case ExecFailure(s, a, e1, t) =>
-        log4jLogger.error(s"""Failed Statement Execution:
+        logger.error(s"""Failed Statement Execution:
                              |
                              |  ${s.split("\n").dropWhile(_.trim.isEmpty).mkString("\n  ")}
                              |

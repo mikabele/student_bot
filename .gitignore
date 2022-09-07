@@ -12,13 +12,17 @@ src/main/scala/botAPI/ext
 
 src/main/resources/rus_properties
 
+src/main/resources/sql_data
+
+lib
+
 # all idea
 
 .idea
 
 #configs
 
-src/main/resources/application.conf
+#src/main/resources/application.conf
 
 # bsp
 .bsp

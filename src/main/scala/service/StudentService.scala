@@ -4,6 +4,7 @@ import canoe.models.User
 import cats.Monad
 import domain.user._
 import error.BotError
+import org.typelevel.log4cats.Logger
 import repository.StudentRepository
 import service.impl.StudentServiceImpl
 
@@ -21,10 +22,12 @@ trait StudentService[F[_]] {
   def getStudents(university: String, course: Int, group: Int): F[List[StudentReadDomain]]
 
   def getUniversities: F[List[String]]
+
+  def addGroup(students: List[StudentCreateDomain]): F[Either[BotError, Int]]
 }
 
 object StudentService {
-  def of[F[_]: Monad](authRepository: StudentRepository[F]): StudentService[F] = {
+  def of[F[_]: Monad: Logger](authRepository: StudentRepository[F]): StudentService[F] = {
     new StudentServiceImpl[F](authRepository)
   }
 }

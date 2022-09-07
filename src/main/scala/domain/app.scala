@@ -9,12 +9,10 @@ object app {
   )
 
   final case class DbConf(
-    provider:          String,
-    driver:            String,
-    url:               String,
-    user:              String,
-    password:          String,
-    migrationLocation: String
+    driver:             String,
+    url:                String,
+    user:               String,
+    password:           String,
   )
 
   final case class TgConf(
