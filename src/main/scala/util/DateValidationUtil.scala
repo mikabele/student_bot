@@ -1,7 +1,7 @@
 package util
 
 import canoe.models.messages.TextMessage
-import canoe.syntax.partialFunctionOps
+import canoe.syntax.{Expect, partialFunctionOps}
 
 import java.time.LocalDate
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
@@ -15,7 +15,7 @@ object DateValidationUtil {
     .appendOptional(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
     .toFormatter()
 
-  def dateValidation(textMessage: syntax.syntax.Expect[TextMessage]): syntax.syntax.Expect[TextMessage] = {
+  def dateValidation(textMessage: Expect[TextMessage]): Expect[TextMessage] = {
     textMessage.when(msg =>
       Try(LocalDate.parse(msg.text, pattern)).fold(
         _ => false,

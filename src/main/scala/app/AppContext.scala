@@ -1,40 +1,38 @@
 package app
 
 import app.DbHandler._
-import canoe.api.TelegramClient
+import canoe.api.{Bot, TelegramClient}
 import canoe.models.Update
 import cats.MonadError
 import cats.effect.{Async, Resource}
-import core.Bot
 import domain.app._
 import fs2.Stream
-import logger.LogHandler
+import org.typelevel.log4cats._
+import org.typelevel.log4cats.slf4j._
 import repository.{QueueRepository, StudentRepository}
-import scenarios.{AuthScenarios, QueueScenarios}
+import scenarios.{AdminScenarios, AuthScenarios, QueueScenarios}
 import service.{QueueService, StudentService}
 import util.bundle.ResourceBundleUtil
 
-//TODO remove Redis
 object AppContext {
   def setUp[F[_]: Async: TelegramClient: MonadError[*[_], Throwable]](
     conf: AppConf
   ): Resource[F, Stream[F, Update]] = {
-    implicit val logHandler: LogHandler[F] = logger.impl.log4jLogHandler("root")
+    implicit val logger: Logger[F] = Slf4jLogger.getLogger[F]
     for {
       tx <- transactor[F](conf.db)
-
-      migrator <- Resource.eval(migrator[F](conf.db))
-      _        <- Resource.eval(migrator.migrate())
 
       bundleUtil = ResourceBundleUtil.of(conf.bundle.path, conf.bundle.languages)
 
       studentRepository = StudentRepository.of(tx)
-      authService       = StudentService.of(studentRepository)(implicitly[MonadError[F, Throwable]])
+      authService       = StudentService.of(studentRepository)
       authScenario      = AuthScenarios.of(authService, bundleUtil)
 
       queueRepository = QueueRepository.of(tx)
       queueService   <- Resource.eval(QueueService.of(studentRepository, queueRepository))
       queueScenario   = QueueScenarios.of(queueService, authService, bundleUtil)
+
+      adminScenarios = AdminScenarios.of(authService, queueService, bundleUtil)
 
     } yield Bot
       .polling[F]
@@ -46,7 +44,10 @@ object AppContext {
         queueScenario.getQueueSeriesScenario,
         queueScenario.getQueueScenario,
         queueScenario.removeFromQueueScenario,
-        queueScenario.takeAnotherPlaceScenario
+        queueScenario.takeAnotherPlaceScenario,
+        adminScenarios.addGroupScenario,
+        adminScenarios.initAdminMenuScenario,
+        adminScenarios.addQueuesScenario
       )
   }
 }
