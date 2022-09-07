@@ -4,7 +4,7 @@ import cats.effect.Concurrent
 import cats.effect.std.Semaphore
 import cats.syntax.all._
 import domain.queue
-import domain.queue.{AddToQueueOption, Queue}
+import domain.queue.{AddToQueueOption, Queue, QueueSeriesCreateDomain}
 import domain.user.StudentReadDomain
 import error.BotError
 import org.typelevel.log4cats.Logger
@@ -31,11 +31,13 @@ trait QueueService[F[_]] {
     place:             Option[Int] = None
   ): F[Either[BotError, Int]]
 
-  def getQueueSeries(student: StudentReadDomain): F[List[queue.QueueSeries]]
+  def getQueueSeries(student: StudentReadDomain): F[List[queue.QueueSeriesReadDomain]]
 
   def getAvailablePlaces(student: StudentReadDomain, qsId: Int, date: LocalDate): F[Either[BotError, List[Int]]]
 
   def getQueue(qsId: Int, date: LocalDate): F[Either[BotError, Queue]]
+
+  def addQueueSeries(queueSeries: List[QueueSeriesCreateDomain]) : F[Either[BotError,Int]]
 }
 
 object QueueService {

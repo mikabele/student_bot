@@ -1,13 +1,14 @@
 package service.impl
 
 import cats.Monad
-import cats.data.EitherT
+import cats.data.{EitherT, NonEmptyList}
 import cats.effect.std.Semaphore
 import cats.syntax.all._
 import domain.queue
 import domain.queue._
 import domain.user.StudentReadDomain
 import error.BotError
+import error.impl.admin.EmptyDataFile
 import error.impl.queue._
 import org.typelevel.log4cats.Logger
 import repository.{QueueRepository, StudentRepository}
@@ -22,7 +23,7 @@ class QueueServiceImpl[F[_]: Monad](
 )(
   implicit logger: Logger[F]
 ) extends QueueService[F] {
-  override def getQueueSeries(student: StudentReadDomain): F[List[QueueSeries]] = {
+  override def getQueueSeries(student: StudentReadDomain): F[List[QueueSeriesReadDomain]] = {
     queueRepository.getQueueSeries(student)
   }
 
@@ -174,6 +175,18 @@ class QueueServiceImpl[F[_]: Monad](
 
       _ <- EitherT.cond(cnt == 1, (), TakePlaceFailed: BotError)
     } yield place
+    res.value
+  }
+
+  override def addQueueSeries(queueSeries: List[QueueSeriesCreateDomain]): F[Either[BotError, Int]] = {
+    val res = for {
+      nel <- EitherT
+        .fromOption(NonEmptyList.fromList(queueSeries), EmptyDataFile: BotError): EitherT[F, BotError, NonEmptyList[
+        QueueSeriesCreateDomain
+      ]]
+      res <- EitherT.liftF(queueRepository.addQueueSeries(nel)): EitherT[F, BotError, Int]
+    } yield res
+
     res.value
   }
 }

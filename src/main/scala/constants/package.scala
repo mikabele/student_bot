@@ -1,7 +1,7 @@
 import canoe.api.models.Keyboard
 import canoe.models.{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup}
 import cats.syntax.all._
-import domain.queue.{AddToQueueOption, QueueSeries}
+import domain.queue.{AddToQueueOption, QueueSeriesReadDomain}
 import domain.user.StudentReadDomain
 import util.TelegramElementBuilder.buildInlineKeyboard
 import util.bundle.StringFormatExtension._
@@ -9,7 +9,7 @@ import util.bundle.StringFormatExtension._
 import java.util.ResourceBundle
 
 package object constants {
-  def mainMenuUserKeyboard(bundle: ResourceBundle): Keyboard.Reply = {
+  def userMenuKeyboard(bundle: ResourceBundle): Keyboard.Reply = {
     val mainMenuBtns: Seq[Seq[KeyboardButton]] = Seq(
       Seq(
         KeyboardButton(bundle.getFormattedString("button.main.take_place")),
@@ -28,16 +28,17 @@ package object constants {
     Keyboard.Reply(mainMenuMp)
   }
 
-  def mainMenuAdminKeyboard(bundle: ResourceBundle): Keyboard.Reply = {
+  def adminMenuKeyboard(bundle: ResourceBundle): Keyboard.Reply = {
     val btns: Seq[Seq[KeyboardButton]] = Seq(
       Seq(
         KeyboardButton(bundle.getFormattedString("button.admin.add_group")),
-        KeyboardButton(bundle.getFormattedString("button.admin.add_queues"))
+        KeyboardButton(bundle.getFormattedString("button.admin.add_queue_series"))
       )
     )
     val mainMenuMp: ReplyKeyboardMarkup = ReplyKeyboardMarkup(btns, resizeKeyboard = true.some)
     Keyboard.Reply(mainMenuMp)
   }
+
 
   val DEFAULT_LANG: String = "en"
 
@@ -59,7 +60,7 @@ package object constants {
       s => s.userId.toString
     )
 
-  def queueSeriesInlineKeyboard(queueSeries: List[QueueSeries]): Keyboard.Inline = buildInlineKeyboard[QueueSeries](
+  def queueSeriesInlineKeyboard(queueSeries: List[QueueSeriesReadDomain]): Keyboard.Inline = buildInlineKeyboard[QueueSeriesReadDomain](
     queueSeries.map(Seq(_)),
     qs => qs.name,
     qs => qs.id.toString

@@ -94,7 +94,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query1),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish", res),
-          mainMenuUserKeyboard(bundle)
+          userMenuKeyboard(bundle)
         )
 
       } yield ()
@@ -115,7 +115,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
             s"flow.${flow_name}.msg.finish",
             queueSeries.map(qs => "- " + qs.name).reduce(_ |+| "\n" |+| _)
           ),
-          mainMenuUserKeyboard(bundle)
+          userMenuKeyboard(bundle)
         )
 
       } yield ()
@@ -148,7 +148,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultMsgAnswer[F, TextMessage](msg),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish", student_names.fold("")(_ |+| "\n" |+| _)),
-          mainMenuUserKeyboard(bundle)
+          userMenuKeyboard(bundle)
         )
 
       } yield ()
@@ -211,7 +211,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query3),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish"),
-          mainMenuUserKeyboard(bundle)
+          userMenuKeyboard(bundle)
         )
 
         queue = queueSeries.find(_.id == qsId).get
@@ -249,7 +249,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query1),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish"),
-          mainMenuUserKeyboard(bundle)
+          userMenuKeyboard(bundle)
         )
 
       } yield ()
@@ -289,7 +289,7 @@ class QueueScenariosImpl[F[_]: TelegramClient: Concurrent](
         _ <- sendMessage(
           defaultCallbackAnswer[F, TextMessage](query3),
           bundle.getFormattedString(s"flow.${flow_name}.msg.finish", res),
-          mainMenuUserKeyboard(bundle)
+          userMenuKeyboard(bundle)
         )
 
       } yield ()

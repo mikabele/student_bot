@@ -15,7 +15,7 @@ import service.{QueueService, StudentService}
 import util.bundle.ResourceBundleUtil
 
 object AppContext {
-  def setUp[F[_]: Async: TelegramClient: MonadError[*[_], Throwable] ](
+  def setUp[F[_]: Async: TelegramClient: MonadError[*[_], Throwable]](
     conf: AppConf
   ): Resource[F, Stream[F, Update]] = {
     implicit val logger: Logger[F] = Slf4jLogger.getLogger[F]
@@ -32,7 +32,7 @@ object AppContext {
       queueService   <- Resource.eval(QueueService.of(studentRepository, queueRepository))
       queueScenario   = QueueScenarios.of(queueService, authService, bundleUtil)
 
-      adminScenarios = AdminScenarios.of(authService,bundleUtil)
+      adminScenarios = AdminScenarios.of(authService, queueService, bundleUtil)
 
     } yield Bot
       .polling[F]
@@ -45,7 +45,9 @@ object AppContext {
         queueScenario.getQueueScenario,
         queueScenario.removeFromQueueScenario,
         queueScenario.takeAnotherPlaceScenario,
-        adminScenarios.addGroupScenario
+        adminScenarios.addGroupScenario,
+        adminScenarios.initAdminMenuScenario,
+        adminScenarios.addQueuesScenario
       )
   }
 }

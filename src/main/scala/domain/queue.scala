@@ -1,7 +1,7 @@
 package domain
 
 import domain.user.StudentReadDomain
-import enumeratum.{ Enum, EnumEntry}
+import enumeratum.{Enum, EnumEntry}
 
 import java.util.Date
 
@@ -19,13 +19,20 @@ object queue {
     date:          Date
   )
 
-  final case class QueueSeries(
+  final case class QueueSeriesReadDomain(
     id:         Int,
     name:       String,
     university: String,
     course:     Int,
     group:      Int,
     queues:     List[Queue]
+  )
+
+  final case class QueueSeriesCreateDomain(
+    name:       String,
+    university: String,
+    course:     Int,
+    group:      Int
   )
 
   final case class QueueSeriesDbReadDomain(

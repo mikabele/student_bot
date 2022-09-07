@@ -17,12 +17,16 @@ import util.bundle.StringFormatExtension._
 
 import scala.language.implicitConversions
 
-class AuthScenariosImpl[F[_]: TelegramClient:Monad](
-                                               studentService: StudentService[F],
-                                               bundleUtil:  ResourceBundleUtil
-)(implicit logger: Logger[F]) extends AuthScenarios[F] {
+class AuthScenariosImpl[F[_]: TelegramClient: Monad](
+  studentService: StudentService[F],
+  bundleUtil:     ResourceBundleUtil
+)(
+  implicit logger: Logger[F]
+) extends AuthScenarios[F] {
 
-  private def checkNonAuthorizedUser(user: Option[User]): Scenario[F, Unit] = {
+  private def checkNonAuthorizedUser(
+    user:   Option[User],
+  ): Scenario[F, Unit] = {
     for {
       studentE <- Scenario.eval(studentService.checkAuthUser(user))
       _ <- studentE.fold(
@@ -36,10 +40,10 @@ class AuthScenariosImpl[F[_]: TelegramClient:Monad](
   }
 
   override def startBotScenario: Scenario[F, Unit] = scenario(command("start"), bundleUtil) { msg =>
+    val bundle = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
     for {
-      _            <- checkNonAuthorizedUser(msg.from)
+      _            <- checkNonAuthorizedUser( msg.from)
       flow_name     = "start"
-      bundle        = bundleUtil.getBundle(msg.from.flatMap(_.languageCode).getOrElse(DEFAULT_LANG))
       universities <- Scenario.eval(studentService.getUniversities)
       query1 <- sendMessageWithCallback(
         defaultMsgAnswer[F, TextMessage](msg),
@@ -70,10 +74,11 @@ class AuthScenariosImpl[F[_]: TelegramClient:Monad](
       )
       studentId = query4.data.get.toInt
       _        <- Scenario.fromEitherF(studentService.registerUser(studentId, query4.from))
+      student   = students.find(_.userId == studentId).get
       _ <- sendMessage(
         defaultCallbackAnswer[F, TextMessage](query4),
         bundle.getFormattedString(s"flow.${flow_name}.msg.finish"),
-        mainMenuUserKeyboard(bundle)
+        userMenuKeyboard(bundle)
       )
 
     } yield ()

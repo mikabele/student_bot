@@ -1,7 +1,7 @@
 package util
 
 import canoe.api.models.Keyboard
-import canoe.api.{callbackQueryApi, chatApi, Scenario, TelegramClient}
+import canoe.api.{Scenario, TelegramClient, callbackQueryApi, chatApi}
 import canoe.models.CallbackQuery
 import canoe.models.messages.{TelegramMessage, TextMessage}
 import canoe.models.outgoing.MessageContent
@@ -18,8 +18,8 @@ import java.util.ResourceBundle
 
 object MarshallingUtil {
 
-  //TODO check why if i send 2 messages with little interval server crushed
   //TODO change messagable signature
+  //TODO check how to solve problem with 2 different main menu keyboards
 
   def getBundleInScenario(msg: TelegramMessage, resourceBundleUtil: ResourceBundleUtil): ResourceBundle = msg match {
     case m: TextMessage => resourceBundleUtil.getBundle(m.from.get.languageCode.getOrElse(DEFAULT_LANG))
@@ -43,13 +43,12 @@ object MarshallingUtil {
           case e: BotError => {
             for {
               _ <- Scenario.eval(logger.error(e.resourceString(bundle)))
-              _ <- Scenario.eval(msg.chat.send(e.resourceString(bundle), keyboard = mainMenuUserKeyboard(bundle)))
+              _ <- Scenario.eval(msg.chat.send(e.resourceString(bundle), keyboard = userMenuKeyboard(bundle)))
             } yield ()
           }
           case ex: Throwable =>
             for {
               _ <- Scenario.eval(logger.error(ex.getMessage))
-              // _ <- Scenario.eval(msg.chat.send(ex.getMessage(), keyboard = mainMenuKeyboard(bundle)))
             } yield ()
         }
     } yield ()
@@ -57,10 +56,16 @@ object MarshallingUtil {
     res.handleErrorWith(_ => Scenario.done)
   }
 
-  def defaultMsgAnswer[F[_]: TelegramClient: Monad, M](msg: TelegramMessage)(content: ReplyMessage[M])(implicit logger:Logger[F]): F[Option[M]] = {
+  def defaultMsgAnswer[F[_]: TelegramClient: Monad, M](
+    msg: TelegramMessage
+  )(
+    content: ReplyMessage[M]
+  )(
+    implicit logger: Logger[F]
+  ): F[Option[M]] = {
 
     for {
-      _ <- logger.debug(s"Send message to chat ${msg.chat} with content ${content.toString}")
+      _   <- logger.debug(s"Send message to chat ${msg.chat} with content ${content.toString}")
       res <- msg.chat.send(content.content, content.replyToMessageId, content.keyboard, content.disableNotification)
     } yield res.some
 
@@ -70,10 +75,12 @@ object MarshallingUtil {
     query: CallbackQuery
   )(
     replyMessage: ReplyMessage[M]
-  )(implicit logger:Logger[F]): F[Option[M]] = {
+  )(
+    implicit logger: Logger[F]
+  ): F[Option[M]] = {
     for {
       msg <- query.message.traverse(msg => defaultMsgAnswer(msg)(replyMessage))
-      _ <- logger.debug(s"Add callback to message ${msg.flatten.get.toString}")
+      _   <- logger.debug(s"Add callback to message ${msg.flatten.get.toString}")
       _   <- query.finish
     } yield msg.flatten
   }
@@ -98,14 +105,4 @@ object MarshallingUtil {
       query <- Scenario.expect(callback(msg))
     } yield query
   }
-
-//  def downloadFile[F[_], Resp](
-//                                filePath: String,
-//                                mapF:     Seq[Any] => Resp
-//                              )(
-//                                implicit telegramClientStreaming: TelegramClientStreaming[F]
-//                              ): StreamMethod[Resp] = {
-//
-//    telegramClientStreaming.Stream()
-//  }
 }
