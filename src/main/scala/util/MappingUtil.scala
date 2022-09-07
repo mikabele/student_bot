@@ -7,8 +7,10 @@ object MappingUtil {
     def dbReadQueueSeriesToQueueSeries(
       dbQueueSeries: List[QueueSeriesDbReadDomain],
       queues:        List[Queue]
-    ): List[QueueSeries] = {
-      dbQueueSeries.map(qs => QueueSeries(qs.id, qs.name, qs.group, queues.filter(_.queueSeriesId == qs.id)))
+    ): List[QueueSeriesReadDomain] = {
+      dbQueueSeries.map(qs =>
+        QueueSeriesReadDomain(qs.id, qs.name, qs.university, qs.course, qs.group, queues.filter(_.queueSeriesId == qs.id))
+      )
     }
   }
 }

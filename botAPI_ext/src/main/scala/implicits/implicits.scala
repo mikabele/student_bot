@@ -1,3 +1,0 @@
-package implicits
-
-object implicits {}

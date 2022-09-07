@@ -1,24 +1,23 @@
 package scenarios
 
-import canoe.api.TelegramClient
+import canoe.api.{Scenario, TelegramClient}
 import cats.MonadError
-import core.Scenario
-import dev.profunktor.redis4cats.RedisCommands
-import logger.LogHandler
+import org.typelevel.log4cats.Logger
 import scenarios.impl.AuthScenariosImpl
 import service.StudentService
+import util.bundle.ResourceBundleUtil
 
-trait AuthScenarios[F[_]] /* extends CallbackAnswerHandler[F] */ {
+trait AuthScenarios[F[_]] {
   def startBotScenario: Scenario[F, Unit]
 
   def signOutScenario: Scenario[F, Unit]
 }
 
 object AuthScenarios {
-  def of[F[_]: TelegramClient: MonadError[*[_], Throwable]: LogHandler](
-    redisCommands: RedisCommands[F, String, String],
-    authService:   StudentService[F]
+  def of[F[_]: TelegramClient: MonadError[*[_], Throwable]: Logger](
+    studentService: StudentService[F],
+    bundleUtil:     ResourceBundleUtil
   ): AuthScenarios[F] = {
-    new AuthScenariosImpl[F](redisCommands, authService)
+    new AuthScenariosImpl[F](studentService, bundleUtil)
   }
 }

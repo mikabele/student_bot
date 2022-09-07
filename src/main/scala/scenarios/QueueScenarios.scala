@@ -1,30 +1,28 @@
 package scenarios
 
-import canoe.api.TelegramClient
+import canoe.api.{Scenario, TelegramClient}
 import cats.Monad
 import cats.effect.kernel.Concurrent
-import cats.syntax.all._
-import core.Scenario
-import dev.profunktor.redis4cats.RedisCommands
-import logger.LogHandler
+import org.typelevel.log4cats.Logger
 import scenarios.impl.QueueScenariosImpl
 import service.{QueueService, StudentService}
+import util.bundle.ResourceBundleUtil
 
-trait QueueScenarios[F[_]] /*extends CallbackAnswerHandler[F] */ {
-  def addToQueueScenario: Scenario[F, Unit]
-  def getQueueSeries:     Scenario[F, Unit]
-  def getQueue:           Scenario[F, Unit]
-  def addFriendToQueue:   Scenario[F, Unit]
-//  def takeAnotherPlace: Scenario[F, Unit]
-  def removeFromQueue: Scenario[F, Unit]
+trait QueueScenarios[F[_]] {
+  def addToQueueScenario:       Scenario[F, Unit]
+  def getQueueSeriesScenario:   Scenario[F, Unit]
+  def getQueueScenario:         Scenario[F, Unit]
+  def addFriendToQueueScenario: Scenario[F, Unit]
+  def takeAnotherPlaceScenario: Scenario[F, Unit]
+  def removeFromQueueScenario:  Scenario[F, Unit]
 }
 
 object QueueScenarios {
-  def of[F[_]: TelegramClient: Monad: Concurrent: LogHandler](
-    redisCommands: RedisCommands[F, String, String],
-    queueService:  QueueService[F],
-    authService:   StudentService[F]
+  def of[F[_]: TelegramClient: Monad: Concurrent: Logger](
+                                                               queueService: QueueService[F],
+                                                               studentService:  StudentService[F],
+                                                               bundleUtil:   ResourceBundleUtil
   ): QueueScenarios[F] = {
-    new QueueScenariosImpl[F](redisCommands, queueService, authService)
+    new QueueScenariosImpl[F](queueService, studentService, bundleUtil)
   }
 }
